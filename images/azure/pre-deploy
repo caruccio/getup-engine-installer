@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -eu
+
+exists_rg=`az group exists --name $AZURE_RESOURCE_GROUP`
+
+if [ "${exists_rg}" == "false" ]; then
+    az group create --name $AZURE_RESOURCE_GROUP --location $AZURE_LOCATION
+fi
+
+#available_sa=`az storage account check-name --name $AZURE_STORAGE_ACCOUNT --query nameAvailable`
+
+#if [ "${available_sa}" == "true" ]; then
+#    az storage account create  --resource-group $AZURE_RESOURCE_GROUP --location $AZURE_LOCATION --sku Standard_LRS --name $AZURE_STORAGE_ACCOUNT
+#fi

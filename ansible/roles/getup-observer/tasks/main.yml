@@ -1,0 +1,81 @@
+---
+- name: Create temp directory
+  command: mktemp -d /tmp/getupcloud-observer-XXXXXX
+  register: repo_dir
+  changed_when: False
+  check_mode: no
+
+- name: Clone getup-observer src repo
+  git:
+    repo: "{{ getupcloud_observer_repository }}"
+    version: "{{ getupcloud_observer_repository_branch }}"
+    accept_hostkey: yes
+    clone: yes
+    dest: "{{ repo_dir.stdout }}/getup-observer"
+  register: getup_observer_src_repo
+
+- debug:
+    msg: "Cloned getup-observer to {{ repo_dir.stdout }}/getup-observer"
+
+- name: Check Observer already exists
+  command: >
+    {{ oc }}
+    get dc/observer
+    -n {{ getupcloud_namespace }}
+    -o name
+    --ignore-not-found
+  register: oc_observer
+
+- set_fact:
+    has_getup_observer_deploy: "{{ oc_observer.stdout_lines | length | bool }}"
+
+- name: Verify installed templates
+  command: >
+    {{ oc }}
+    get template/observer
+    -n {{ getupcloud_namespace }}
+    -o name
+    --ignore-not-found
+  register: oc_template
+
+- name: Add cluster role to user
+  oc_adm_policy_user:
+    user: "system:serviceaccount:{{ getupcloud_namespace }}:observer"
+    resource_kind: cluster-role
+    resource_name: cluster-reader
+    state: present
+
+- name: Create getup-observer template
+  oc_obj:
+    state: present
+    kind: template
+    namespace: "{{ getupcloud_namespace }}"
+    name: "{{ getupcloud_observer_template_name }}"
+    files:
+      - "{{ repo_dir.stdout }}/getup-observer/template.yaml"
+  when:
+  - getupcloud_observer_template_name not in oc_template.stdout_lines
+
+- name: Process and execute template
+  oc_process:
+    state: present
+    create: true
+    template_name: "{{ getupcloud_observer_template_name }}"
+    namespace: "{{ getupcloud_namespace }}"
+    reconcile: true
+    params:
+      APPS_DOMAIN: "{{ getupcloud_apps_zone }}"
+      HANDLE_EVENT_SLACK_WEBHOOK: "{{ getupcloud_slack_operations_webhook }}"
+      HANDLE_EVENT_SLACK_CHANNEL: "{{ getupcloud_slack_operations_channel }}"
+      HANDLE_EVENT_FREQ: "{{ getupcloud_observer_message_frequency }}"
+  when:
+    - not has_getup_observer_deploy
+    - getupcloud_slack_operations_webhook is defined and getupcloud_slack_operations_webhook != ""
+
+### Instalar rotinas de observer e partial
+#
+#- [ ] Feito
+#
+#    master# git checkout https://github.com/getupcloud/getup-usage-monitor.git
+#    master# cd getup-usage-monitor/
+#    master# sudo sh install.sh

@@ -1,0 +1,8 @@
+ansible/certs
+*.key
+*.crt
+*.pem
+*.sw?
+environment*
+plan.*
+state

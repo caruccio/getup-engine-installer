@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 [ansible-host-pattern] [shell-command]"
+    exit
+fi
+
+cd /getup-engine/ansible
+
+host_pattern=$1
+shift
+exec ansible $host_pattern -i /state/hosts-$TARGET_OPENSHIFT_VERSION -m shell -a "$*"

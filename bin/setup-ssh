@@ -1,0 +1,45 @@
+#!/bin/bash
+
+if [ -e "${STATE_DIR}/terraform-out.env" ]; then
+    echo Sourcing $STATE_DIR/terraform-out.env
+    . $STATE_DIR/terraform-out.env
+    export master1=${MASTER_HOSTNAMES%% *}
+else
+    export master1="master-1.${CLUSTER_ZONE}"
+fi
+
+if [ ! -d ~/.ssh ]; then
+    mkdir --mode=700 ~/.ssh
+fi
+
+export SSH_CONFIG_FILE=~/.ssh/config
+echo Generating $SSH_CONFIG_FILE
+
+ssh_config_in=/getup-engine/ansible/ssh_config.in
+envsubst < ${ssh_config_in} > ${STATE_DIR}/config
+
+install --mode=0600 $STATE_DIR/config ${SSH_CONFIG_FILE}
+
+export ID_RSA_FILE=~/.ssh/id_rsa
+export ID_RSA_PUB_FILE=${ID_RSA_FILE}.pub
+
+echo Saving ssh keys:
+echo "  - $ID_RSA_FILE"
+echo "  - $ID_RSA_PUB_FILE"
+
+if [ ! -e  "${ID_RSA_FILE}" ]; then
+    echo -e "${ID_RSA}" > ${ID_RSA_FILE}
+fi
+chmod 0600 ${ID_RSA_FILE}
+
+ssh-keygen -yf ${ID_RSA_FILE} > ${ID_RSA_PUB_FILE}
+export ID_RSA_PUB="$(<${ID_RSA_PUB_FILE})"
+
+chmod 0600 ${ID_RSA_PUB_FILE}
+
+if [ -z "${SSH_AUTH_SOCK}" ]; then
+    eval `ssh-agent -s`
+    sleep 1
+    ssh-add ${ID_RSA_FILE}
+fi
+echo

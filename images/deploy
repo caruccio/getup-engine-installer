@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -e
+
+if [ $# -gt 0 ]; then
+    PROVIDER="$@"
+fi
+
+if [ -z "${PROVIDER}" ]; then
+    echo Missing arg: provider names
+    exit 1
+fi
+
+ROOT_DIR=${0%/*}
+cd $ROOT_DIR
+
+for p in ${PROVIDER}; do
+    if [ -d $p ]; then
+        echo "#MARK - `date` - Creating $p images"
+        ( cd $p && ./deploy )
+        echo "#MARK - `date` -  Finished creating $P images"
+    else
+        echo "Invalid provider: $p"
+        exit 1
+    fi
+done

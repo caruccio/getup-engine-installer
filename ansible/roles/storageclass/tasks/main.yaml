@@ -1,0 +1,16 @@
+---
+- when: openshift_cloudprovider_kind | default('') == 'azure'
+  tags:
+    - post-install
+  block:
+  - copy:
+      src: files/azure.yaml
+      dest: /tmp/storageclass-azure.yaml
+
+  - name: Create azure default StorageClass
+    oc_obj:
+      state: present
+      kind: StorageClass
+      name: standard-lrs
+      files:
+        - /tmp/storageclass-azure.yaml

@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+to_bytes()
+{
+    sed -e 's/\([0-9]\+\)T$/(\1*1000^4)/' \
+        -e 's/\([0-9]\+\)Ti$/(\1*1024^4)/' \
+        -e 's/\([0-9]\+\)G$/(\1*1000^3)/'\
+        -e 's/\([0-9]\+\)Gi$/(\1*1024^3)/'\
+        -e 's/\([0-9]\+\)M$/(\1*1000^2)/' \
+        -e 's/\([0-9]\+\)Mi$/(\1*1024^2)/' \
+        -e 's/\([0-9]\+\)K$/(\1*1000)/' \
+        -e 's/\([0-9]\+\)Ki$/(\1*1024)/' \
+        -e 's/\([0-9]\+\)/\1/' \
+        -e '/null/d' | paste -s -d+ | bc
+
+
+}
+
+get_limits_for_node()
+{
+    sudo curl -s --cert /etc/origin/master/admin.crt --key /etc/origin/master/admin.key \
+        "https://kubernetes.default.svc/api/v1/pods?fieldSelector=spec.nodeName%3D${node}%2Cstatus.phase%21%3DFailed%2Cstatus.phase%21%3DSucceeded" \
+        | jq -r .items[].spec.containers[].resources.limits.memory \
+        | to_bytes
+}
+
+total=0
+nodes=( $(oc get node -l role=app -o json | jq -r .items[].metadata.name) )
+for node in  ${nodes[*]}; do
+    echo -n "Querying total used memory for node $node... "
+    bytes=$(get_limits_for_node $node)
+    echo $bytes bytes
+    total=$((bytes + total))
+done
+
+echo -----
+echo "Total cluster memory usage: $(( total / (1024 ** 3) ))Gi (limits)"

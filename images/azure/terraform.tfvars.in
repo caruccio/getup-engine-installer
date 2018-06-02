@@ -1,0 +1,7 @@
+azure_subscription_id = "${AZURE_SUBSCRIPTION_ID}"
+azure_location        = "${AZURE_LOCATION}"
+azure_resource_group  = "${AZURE_RESOURCE_GROUP}"
+user                  = "centos"
+os                    = "${AZURE_OS_OFFER}"
+user_private_key_file = "${ID_RSA_FILE}"
+user_public_key_file  = "${ID_RSA_PUB_FILE}"

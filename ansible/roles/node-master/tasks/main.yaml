@@ -1,0 +1,58 @@
+---
+- name: Create www dir
+  file:
+    state: directory
+    path: "/var/www/"
+  tags:
+    - pre-install
+
+- name: Copy assets
+  copy:
+    src: "files/assets/html"
+    dest: "/var/www/"
+    force: yes
+  tags:
+    - pre-install
+
+- name: Set etcd IO priority
+  become: yes
+  shell: ionice -p `pgrep etcd` -c1 -n3
+  tags:
+    - post-install
+
+- when: openshift_cloudprovider_kind | default('') == 'azure'
+  tags:
+    - post-install
+  block:
+  - name: Update cloudprovider master-config for Azure
+    yedit:
+      src: /etc/origin/master/master-config.yaml
+      key: kubernetesMasterConfig.apiServerArguments.cloud-provider
+      value:
+      - 'azure'
+  - name: Update cloudprovider master-config for Azure
+    yedit:
+      src: /etc/origin/master/master-config.yaml
+      key: kubernetesMasterConfig.apiServerArguments.cloud-config
+      value:
+      - '/etc/azure/azure.conf'
+
+  - name: Update cloudprovider master-config for Azure
+    yedit:
+      src: /etc/origin/master/master-config.yaml
+      key: kubernetesMasterConfig.controllerArguments.cloud-provider
+      value:
+      - 'azure'
+
+  - name: Update cloudprovider master-config for Azure
+    yedit:
+      src: /etc/origin/master/master-config.yaml
+      key: kubernetesMasterConfig.controllerArguments.cloud-config
+      value:
+      - '/etc/azure/azure.conf'
+
+  - name: Restart services
+    shell: echo
+    notify:
+    - restart master api
+    - restart master controllers

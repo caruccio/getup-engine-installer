@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  name: alertmanager-zabbix-webhook
+spec:
+  replicas: {{ replicas }}
+  selector:
+    app: alertmanager-zabbix-webhook
+  strategy:
+    activeDeadlineSeconds: 21600
+    resources: {}
+    rollingParams:
+      intervalSeconds: 1
+      maxSurge: 0
+      maxUnavailable: 50%
+      timeoutSeconds: 600
+      updatePeriodSeconds: 1
+    type: Rolling
+  template:
+    metadata:
+      labels:
+        app: alertmanager-zabbix-webhook
+    spec:
+      restartPolicy: Always
+      containers:
+      - name: webhook
+        image: gmauleon/alertmanager-zabbix-webhook:0.2.0
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: 64Mi
+            cpu: 50m
+          limits:
+            memory: 64Mi
+            cpu: 50m
+        volumeMounts:
+        - mountPath: /etc/webhook
+          name: alertmanager-zabbix-webhook-config
+      volumes:
+      - name: alertmanager-zabbix-webhook-config
+        configMap:
+          name: alertmanager-zabbix-webhook

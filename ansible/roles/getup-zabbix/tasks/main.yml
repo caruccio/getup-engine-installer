@@ -1,0 +1,69 @@
+---
+- name: Generate alertmanager zabbix webhook ConfigMap
+  template:
+    src: templates/alertmanager-zabbix-webhook-config.yml.j2
+    dest: alertmanager-zabbix-webhook-config.yml
+  vars:
+    zabbix_server_host: zabbix-host
+    zabbix_server_port: "{{ getupcloud_zabbix_server_port }}"
+    zabbix_host_annotation: "{{ getupcloud_zabbix_host_annotation }}"
+
+- name: Create alertmanager zabbix webhook ConfigMap
+  oc_obj:
+    state: present
+    kind: ConfigMap
+    name: alertmanager-zabbix-webhook
+    namespace: "{{ openshift_prometheus_namespace }}"
+    files:
+      - alertmanager-zabbix-webhook-config.yml
+    delete_after: yes
+
+- name: Generate external zabbix-host Service
+  template:
+    src: templates/zabbix-host.yml.j2
+    dest: zabbix-host.yml
+  vars:
+    zabbix_server_host: zabbix-host
+    zabbix_server_port: "{{ getupcloud_zabbix_server_port }}"
+
+- name: Create external zabbix-host Service
+  oc_obj:
+    state: present
+    kind: Service
+    name: zabbix-host
+    namespace: "{{ openshift_prometheus_namespace }}"
+    files:
+      - zabbix-host.yml
+    delete_after: yes
+
+- name: Generate alertmanager zabbix webhook DeploymentConfig
+  template:
+    src: templates/alertmanager-zabbix-webhook.yml.j2
+    dest: alertmanager-zabbix-webhook.yml
+  vars:
+    replicas: "{{ getupcloud_alertmanager_zabbix_webhook_replicas | default(2) }}"
+
+- name: Create alertmanager zabbix webhook DeploymentConfig
+  oc_obj:
+    state: present
+    kind: DeploymentConfig
+    name: alertmanager-zabbix-webhook
+    namespace: "{{ openshift_prometheus_namespace }}"
+    files:
+      - alertmanager-zabbix-webhook.yml
+    delete_after: yes
+
+- name: Create alertmanager zabbix webhook Service
+  oc_service:
+    namespace: "{{ openshift_prometheus_namespace }}"
+    name: alertmanager-zabbix-webhook
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: alertmanager-zabbix-webhook
+    session_affinity: None
+    service_type: ClusterIP
+

@@ -1,0 +1,9 @@
+---
+- name: Install Getup API
+  hosts: app_image
+  tags:
+    - app-image
+  tasks:
+    - include_role:
+        name: app-image
+

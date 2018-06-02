@@ -1,0 +1,118 @@
+#!/bin/bash
+#
+# References:
+#  https://stackoverflow.com/questions/23523456/how-to-give-a-multiline-certificate-name-cn-for-a-certificate-generated-using
+#  https://stackoverflow.com/questions/4024393/difference-between-self-signed-ca-and-self-signed-certificate
+#  https://web.archive.org/web/20160403100211/https://metabrot.rocho.org/jan/selfsign.html
+#  https://jamielinux.com/docs/openssl-certificate-authority/appendix/root-configuration-file.html
+#  man x509v3_config
+
+echo Generating self signed certificates and CA for $1
+
+set -eu
+
+DOMAIN=$1
+mkdir -p $2
+cd $2
+
+
+CA_CONFIG="
+[req]
+default_bits        = 2048
+distinguished_name  = subject
+req_extensions      = CA
+x509_extensions     = CA
+string_mask         = utf8only
+
+[subject]
+
+countryName         = Country Name (2 letter code)
+countryName_default = BR
+
+stateOrProvinceName     = State or Province Name (full name)
+stateOrProvinceName_default = SP
+
+localityName            = Locality Name (eg, city)
+localityName_default    = Sao Paulo
+
+organizationName         = Organization Name (eg, company)
+organizationName_default = Getup Cloud
+
+commonName          = Common Name (e.g. server FQDN or YOUR name)
+commonName_default  = *.${DOMAIN}
+
+emailAddress            = Email Address
+emailAddress_default    = ssl@${DOMAIN}
+
+[CA]
+
+basicConstraints        = CA:TRUE, pathlen:1
+keyUsage                = digitalSignature, nonRepudiation, keyCertSign, keyEncipherment, dataEncipherment
+extendedKeyUsage        = serverAuth, clientAuth, timeStamping
+authorityKeyIdentifier  = keyid, issuer
+"
+
+echo Generating self signing CA
+openssl req -nodes -new -x509 -days 3650 -keyout ca-$DOMAIN.key -out ca-$DOMAIN.crt \
+    -subj "/C=BR/ST=Sao Paulo/L=Sao Paulo/O=Getup Cloud Inc./OU=IT/CN=getupcloud.com"
+    -config <(printf "$CA_CONFIG") \
+
+CERT_CONFIG="
+[req]
+default_bits        = 2048
+distinguished_name  = subject
+req_extensions      = SAN
+x509_extensions     = SAN
+string_mask         = utf8only
+
+[subject]
+
+countryName         = Country Name (2 letter code)
+countryName_default = BR
+
+stateOrProvinceName     = State or Province Name (full name)
+stateOrProvinceName_default = SP
+
+localityName            = Locality Name (eg, city)
+localityName_default    = Sao Paulo
+
+organizationName         = Organization Name (eg, company)
+organizationName_default = Getup Cloud
+
+commonName          = Common Name (e.g. server FQDN or YOUR name)
+commonName_default  = *.${DOMAIN}
+
+emailAddress            = Email Address
+emailAddress_default    = ssl@${DOMAIN}
+
+[SAN]
+
+subjectKeyIdentifier    = hash
+
+extendedKeyUsage    = serverAuth
+subjectAltName      = @alternate_names
+
+[alternate_names]
+
+DNS.1 = ${API_ENDPOINT}
+DNS.2 = ${API_ENDPOINT_INTERNAL}
+DNS.3 = *.ouskg230505ebpfib51yqk21af.bx.internal.cloudapp.net
+"
+
+echo Generating self signed certificate
+openssl genrsa 4096 > wildcard.$DOMAIN.key.secure
+openssl rsa -in wildcard.$DOMAIN.key.secure -out wildcard.$DOMAIN.key
+openssl req -new -key wildcard.$DOMAIN.key \
+    -subj "/C=BR/ST=Sao Paulo/L=Sao Paulo/O=Getup Cloud Inc./OU=IT/CN=*.$DOMAIN" \
+    -reqexts SAN -extensions SAN \
+    -config <(printf "$CERT_CONFIG") \
+    > wildcard.$DOMAIN.csr
+openssl x509 -req -days 3650 -in wildcard.$DOMAIN.csr \
+    -extensions SAN \
+    -extfile <(printf "$CERT_CONFIG") \
+    -CA ca-$DOMAIN.crt -CAkey ca-$DOMAIN.key -set_serial $RANDOM$RANDOM -out wildcard.$DOMAIN.crt
+
+openssl x509 -noout -text < wildcard.$DOMAIN.crt > wildcard.$DOMAIN.info
+
+echo "Generated certificates (details at $PWD/wildcard.$DOMAIN.info)"
+ls -la wildcard.$DOMAIN.* ca-$DOMAIN.*

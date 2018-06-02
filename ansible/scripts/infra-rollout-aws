@@ -1,0 +1,36 @@
+#!/bin/bash
+
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 [infra-hosts...]"
+    exit 1
+fi
+
+echo -n "Waiting for all infra nodes to join load balancer ."
+
+ELB_INSTANCES=()
+while [ ${#ELB_INSTANCES[*]} -lt $# ]; do
+    ELB_INSTANCES=(
+        $(aws elb describe-load-balancers --load-balancer-names ${NAME}-infra \
+        --query LoadBalancerDescriptions[0].Instances \
+        --output text)
+    )
+    sleep 10
+    echo -n .
+done
+echo ' [done]'
+
+## Format for providerID = "aws:///$region/$instanceId"
+PROVIDER_IDS="$(oc get node -l role=infra,color=blue '--template="{{range .items}} {{.spec.providerID}} {{end}}"')"
+
+if [ -z "$PROVIDER_IDS" ]; then
+    echo "WARNING: No infra nodes found"
+    exit
+fi
+
+INSTANCE_IDS="$(grep -o 'i-[0-9a-zA-Z]\+' <<<$PROVIDER_IDS)"
+
+echo Deregistering instances: $INSTANCE_IDS
+
+aws elb deregister-instances-from-load-balancer \
+    --load-balancer-name ${NAME}-infra \
+    --instances ${INSTANCE_IDS}

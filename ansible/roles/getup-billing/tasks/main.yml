@@ -1,0 +1,9 @@
+---
+- local_action:
+  stat:
+    path: "{{ getupcloud_billing_repository_key_file }}"
+  register: stat_key_file
+
+- include_role:
+    name: ./install-getup-billing.yml
+  when: stat_key_file.stat.exists == true

@@ -1,0 +1,121 @@
+---
+- name: Create temp directory
+  command: mktemp -d /tmp/getupcloud-billing-XXXXXX
+  register: repo_dir
+  changed_when: False
+  check_mode: no
+
+- name: Copy deploy key
+  copy:
+    src: "{{ getupcloud_billing_repository_key_file }}"
+    dest: "{{ repo_dir.stdout }}/id_rsa"
+    mode: 0600
+
+- name: Clone getup-billing src repo
+  git:
+    repo: "{{ getupcloud_billing_repository }}"
+    version: "{{ getupcloud_billing_repository_branch }}"
+    key_file: "{{ repo_dir.stdout }}/id_rsa"
+    accept_hostkey: yes
+    clone: yes
+    dest: "{{ repo_dir.stdout }}/getup-billing"
+  register: getup_billing_src_repo
+
+- debug:
+    msg: "Cloned getup-billing to {{ repo_dir.stdout }}/getup-billing"
+
+- name: Check getup-billing repo dir
+  stat:
+    path: /usr/share/getup-billing
+  register: getup_billing_repo
+
+- name: Update getup-billing repo
+  shell: >
+    git reset --hard &&
+    git remote set-url origin {{ repo_dir.stdout }}/getup-billing &&
+    git pull
+  args:
+    chdir: /usr/share/getup-billing/
+  when: getup_billing_repo.stat.isdir is defined and getup_billing_repo.stat.isdir
+
+- name: Install getup-billing
+  git:
+    repo: "{{ repo_dir.stdout }}/getup-billing"
+    version: "{{ getupcloud_billing_repository_branch }}"
+    clone: yes
+    dest: "/usr/share/getup-billing"
+  when: getup_billing_repo.stat.isdir is not defined
+
+- name: Install deps
+  yum:
+    state: present
+    name:
+      - gcc
+      - mysql-devel
+      - python-devel
+      - python-setuptools
+
+- name: Install virtualenv
+  command: easy_install virtualenv
+
+- name: Install pip
+  command: easy_install pip
+
+- name: Check virtualenv
+  stat:
+    path: /usr/share/getup-billing/.env
+  register: env_dir
+
+- name: Init virtualenv
+  shell: >
+    virtualenv .env &&
+    source .env/bin/activate &&
+    pip install -r requirements.txt
+  args:
+    chdir: /usr/share/getup-billing
+  when: env_dir.stat.exists == False
+
+- name: Create service account
+  oc_serviceaccount:
+    name: billing
+    state: present
+    namespace: "{{ getupcloud_namespace }}"
+
+- name: Add cluster role to user
+  oc_adm_policy_user:
+    user: "system:serviceaccount:{{ getupcloud_namespace }}:billing"
+    resource_kind: cluster-role
+    resource_name: cluster-reader
+    state: present
+
+- name: Create log dir
+  file:
+    path: /var/log/getup-billing
+    state: directory
+    owner: "{{ ansible_user }}"
+    mode: 0750
+
+- name: Migrate usage database
+  shell: ./pull-metrics migrate_db
+  args:
+    chdir: /usr/share/getup-billing
+
+- name: Create usage crontab
+  cron:
+    name: "Pull usage metrics"
+    user: "{{ ansible_user }}"
+    job: >
+      OPENSHIFT_MASTER_URL=https://{{ openshift_master_cluster_hostname }}
+      BILLING_NAMESPACE={{ getupcloud_namespace }}
+      /usr/share/getup-billing/pull-metrics > /var/log/getup-billing/pull-metrics.log
+
+- name: Create partials and trial control crontab
+  cron:
+    name: "Run partials and trial control"
+    user: "{{ ansible_user }}"
+    minute: 0
+    hour: 0
+    job: >
+      OPENSHIFT_MASTER_URL=https://{{ openshift_master_cluster_hostname }}
+      BILLING_NAMESPACE={{ getupcloud_namespace }}
+      /usr/share/getup-billing/make-partials > /var/log/getup-billing/make-partials.log

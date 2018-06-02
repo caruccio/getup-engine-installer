@@ -1,0 +1,39 @@
+---
+- name: Setup
+  hosts: localhost
+  connection: local
+  become: no
+  gather_facts: no
+  tags:
+    - always
+  roles:
+    - init
+
+- name: Copy tools
+  hosts: oo_first_master
+  tags:
+    - tools
+  tasks:
+    - name: Copy cluster-metrics
+      copy:
+        src: ../../../bin/cluster-metrics
+        dest: /usr/local/bin/cluster-metrics
+        mode: 0755
+
+- import_playbook: ../getup-monitoring/config.yml
+  when: openshift_hosted_prometheus_deploy | default(false) | bool
+
+- import_playbook: ../getup-console/config.yml
+  when: getupcloud_install_console | default(true) | bool
+
+- import_playbook: ../getup-api/config.yml
+  when: getupcloud_install_api | default(true) | bool
+
+- import_playbook: ../getup-billing/config.yml
+  when: getupcloud_install_billing | default(true) | bool
+
+- import_playbook: ../getup-backup/config.yml
+  when: getupcloud_install_backup | default(true) | bool
+
+- import_playbook: ../getup-observer/config.yml
+  when: getupcloud_install_observer | default(false) | bool

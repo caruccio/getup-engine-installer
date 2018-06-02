@@ -1,0 +1,77 @@
+{
+    "variables": {
+        "aws_access_key": "{{env `AWS_ACCESS_KEY_ID`}}",
+        "aws_secret_key": "{{env `AWS_SECRET_ACCESS_KEY`}}",
+        "aws_region":     "{{env `AWS_DEFAULT_REGION`}}",
+        "subnet_id":      "{{env `PACKER_AWS_SUBNET_ID`}}"
+    },
+
+    "builders": [
+        {
+            "name":           "bastion",
+            "type":           "amazon-ebs",
+            "ami_name":       "GetupEngine Bastion",
+            "access_key":     "{{user `aws_access_key`}}",
+            "secret_key":     "{{user `aws_secret_key`}}",
+            "region":         "{{user `aws_region`}}",
+            "instance_type":  "t2.medium",
+            "ssh_username":   "centos",
+            "subnet_id":      "{{user `subnet_id`}}",
+            "associate_public_ip_address": true,
+
+            "source_ami_filter": {
+                "filters": {
+                    "virtualization-type": "hvm",
+                    "name": "CentOS Linux 7 x86_64 HVM EBS*",
+                    "root-device-type": "ebs"
+                },
+                "owners": ["679593333241"],
+                "most_recent": true
+            },
+
+            "launch_block_device_mappings": [
+                {
+                    "device_name": "/dev/sda1",
+                    "volume_size": "20",
+                    "volume_type": "gp2",
+                    "delete_on_termination": true
+                }
+            ],
+
+            "ami_block_device_mappings": [
+                {
+                    "device_name": "/dev/xvda",
+                    "volume_size": "20",
+                    "volume_type": "gp2",
+                    "delete_on_termination": true
+                }
+            ],
+
+            "tags": {
+                "BuildTimestamp": "{{timestamp}}",
+                "Name": "GetupEngine Bastion",
+                "BuildRegion": "{{ .BuildRegion }}",
+                "BaseAMIName": "{{ .SourceAMIName }}",
+                "BaseAMI": "{{ .SourceAMI }}"
+            }
+        }
+    ],
+
+    "provisioners": [
+        {
+            "type": "shell",
+            "inline": [
+                "sudo -EH yum update -y",
+                "sudo -EH yum install nc -y"
+            ]
+        }
+    ],
+
+    "post-processors": [
+        {
+            "type":       "manifest",
+            "output":     "aws-bastion-manifest.json",
+            "strip_path": true
+        }
+    ]
+}

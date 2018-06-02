@@ -1,0 +1,21 @@
+---
+- name: Prometheus/Grafana Monitoring
+  hosts: oo_first_master
+  gather_facts: no
+  tags:
+    - getup-monitoring
+  tasks:
+    - include_role:
+        name: getup-prometheus
+    - include_role:
+        name: getup-grafana
+
+- name: Prometheus/Grafana Integration
+  hosts: oo_first_master
+  gather_facts: no
+  tags:
+    - getup-zabbix
+  tasks:
+    - include_role:
+        name: getup-zabbix
+      when: getupcloud_install_alertmanager_zabbix_webhook | default(false) | bool

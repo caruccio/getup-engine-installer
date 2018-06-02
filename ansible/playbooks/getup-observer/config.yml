@@ -1,0 +1,8 @@
+---
+- name: Install Observer
+  hosts: oo_first_master
+  tags:
+    - getup-observer
+  tasks:
+    - include_role:
+        name: getup-observer

@@ -1,0 +1,4 @@
+#!/bin/bash
+
+master1=${MASTER_HOSTNAMES%% *}
+exec ssh -o 'StrictHostKeyChecking no' ${master1:-master-1.${CLUSTER_ZONE}} oc $@

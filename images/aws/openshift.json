@@ -1,0 +1,253 @@
+{
+    "variables": {
+        "aws_access_key": "{{env `AWS_ACCESS_KEY_ID`}}",
+        "aws_secret_key": "{{env `AWS_SECRET_ACCESS_KEY`}}",
+        "aws_region":     "{{env `AWS_DEFAULT_REGION`}}",
+        "subnet_id":      "{{env `PACKER_AWS_SUBNET_ID`}}",
+        "high_perf_disk_type": "{{env `HIGH_PERF_DISK_TYPE`}}",
+        "high_perf_disk_iops": "{{env `HIGH_PERF_DISK_IOPS`}}"
+    },
+
+    "builders": [
+        {
+            "name":           "master",
+            "type":           "amazon-ebs",
+            "ami_name":       "GetupEngine Master",
+            "access_key":     "{{user `aws_access_key`}}",
+            "secret_key":     "{{user `aws_secret_key`}}",
+            "region":         "{{user `aws_region`}}",
+            "instance_type":  "t2.medium",
+            "ssh_username":   "centos",
+            "subnet_id":      "{{user `subnet_id`}}",
+            "associate_public_ip_address": true,
+
+            "source_ami_filter": {
+                "filters": {
+                    "virtualization-type": "hvm",
+                    "name": "CentOS Linux 7 x86_64 HVM EBS*",
+                    "root-device-type": "ebs"
+                },
+                "owners": ["679593333241"],
+                "most_recent": true
+            },
+
+            "launch_block_device_mappings": [
+                {
+                    "device_name": "/dev/sda1",
+                    "volume_size": "20",
+                    "volume_type": "{{user `high_perf_disk_type`}}",
+                    "iops":        "{{user `high_perf_disk_iops`}}",
+                    "delete_on_termination": true
+                },
+                {
+                    "device_name": "/dev/xvdb",
+                    "volume_size": "50",
+                    "volume_type": "gp2",
+                    "delete_on_termination": true
+                },
+                {
+                    "device_name": "/dev/xvdc",
+                    "volume_size": "50",
+                    "volume_type": "gp2",
+                    "delete_on_termination": true
+                }
+            ],
+
+            "ami_block_device_mappings": [
+                {
+                    "device_name": "/dev/xvda",
+                    "volume_size": "20",
+                    "volume_type": "{{user `high_perf_disk_type`}}",
+                    "iops":        "{{user `high_perf_disk_iops`}}",
+                    "delete_on_termination": true
+                },
+                {
+                    "device_name": "/dev/xvdb",
+                    "volume_size": "50",
+                    "volume_type": "gp2",
+                    "delete_on_termination": true
+                },
+                {
+                    "device_name": "/dev/xvdc",
+                    "volume_size": "50",
+                    "volume_type": "gp2",
+                    "delete_on_termination": true
+                }
+            ],
+
+            "tags": {
+                "BuildTimestamp": "{{timestamp}}",
+                "Name": "GetupEngine Master",
+                "BuildRegion": "{{ .BuildRegion }}",
+                "BaseAMIName": "{{ .SourceAMIName }}",
+                "BaseAMI": "{{ .SourceAMI }}"
+            }
+        },
+        {
+            "name":           "infra",
+            "type":           "amazon-ebs",
+            "ami_name":       "GetupEngine Infra",
+            "access_key":     "{{user `aws_access_key`}}",
+            "secret_key":     "{{user `aws_secret_key`}}",
+            "region":         "{{user `aws_region`}}",
+            "instance_type":  "t2.medium",
+            "ssh_username":   "centos",
+            "subnet_id":      "{{user `subnet_id`}}",
+            "associate_public_ip_address": true,
+
+            "source_ami_filter": {
+                "filters": {
+                    "virtualization-type": "hvm",
+                    "name": "CentOS Linux 7 x86_64 HVM EBS*",
+                    "root-device-type": "ebs"
+                },
+                "owners": ["679593333241"],
+                "most_recent": true
+            },
+
+            "launch_block_device_mappings": [
+                {
+                    "device_name": "/dev/sda1",
+                    "volume_size": "20",
+                    "volume_type": "{{user `high_perf_disk_type`}}",
+                    "iops":        "{{user `high_perf_disk_iops`}}",
+                    "delete_on_termination": true
+                },
+                {
+                    "device_name": "/dev/xvdb",
+                    "volume_size": "100",
+                    "volume_type": "gp2",
+                    "delete_on_termination": true
+                },
+                {
+                    "device_name": "/dev/xvdc",
+                    "volume_size": "200",
+                    "volume_type": "gp2",
+                    "delete_on_termination": true
+                }
+            ],
+
+            "ami_block_device_mappings": [
+                {
+                    "device_name": "/dev/xvda",
+                    "volume_size": "20",
+                    "volume_type": "{{user `high_perf_disk_type`}}",
+                    "iops":        "{{user `high_perf_disk_iops`}}",
+                    "delete_on_termination": true
+                },
+                {
+                    "device_name": "/dev/xvdb",
+                    "volume_size": "100",
+                    "volume_type": "gp2",
+                    "delete_on_termination": true
+                },
+                {
+                    "device_name": "/dev/xvdc",
+                    "volume_size": "200",
+                    "volume_type": "gp2",
+                    "delete_on_termination": true
+                }
+            ],
+
+            "tags": {
+                "BuildTimestamp": "{{timestamp}}",
+                "Name": "GetupEngine Infra",
+                "BuildRegion": "{{ .BuildRegion }}",
+                "BaseAMIName": "{{ .SourceAMIName }}",
+                "BaseAMI": "{{ .SourceAMI }}"
+            }
+        },
+        {
+            "name":           "app",
+            "type":           "amazon-ebs",
+            "ami_name":       "GetupEngine App",
+            "access_key":     "{{user `aws_access_key`}}",
+            "secret_key":     "{{user `aws_secret_key`}}",
+            "region":         "{{user `aws_region`}}",
+            "instance_type":  "t2.medium",
+            "ssh_username":   "centos",
+            "subnet_id":      "{{user `subnet_id`}}",
+            "associate_public_ip_address": true,
+
+            "source_ami_filter": {
+                "filters": {
+                    "virtualization-type": "hvm",
+                    "name": "CentOS Linux 7 x86_64 HVM EBS*",
+                    "root-device-type": "ebs"
+                },
+                "owners": ["679593333241"],
+                "most_recent": true
+            },
+
+            "launch_block_device_mappings": [
+                {
+                    "device_name": "/dev/sda1",
+                    "volume_size": "20",
+                    "volume_type": "{{user `high_perf_disk_type`}}",
+                    "iops":        "{{user `high_perf_disk_iops`}}",
+
+                    "delete_on_termination": true
+                },
+                {
+                    "device_name": "/dev/xvdb",
+                    "volume_size": "100",
+                    "volume_type": "gp2",
+                    "delete_on_termination": true
+                },
+                {
+                    "device_name": "/dev/xvdc",
+                    "volume_size": "200",
+                    "volume_type": "gp2",
+                    "delete_on_termination": true
+                }
+            ],
+
+            "ami_block_device_mappings": [
+                {
+                    "device_name": "/dev/xvda",
+                    "volume_size": "20",
+                    "volume_type": "{{user `high_perf_disk_type`}}",
+                    "iops":        "{{user `high_perf_disk_iops`}}",
+                    "delete_on_termination": true
+                },
+                {
+                    "device_name": "/dev/xvdb",
+                    "volume_size": "100",
+                    "volume_type": "gp2",
+                    "delete_on_termination": true
+                },
+                {
+                    "device_name": "/dev/xvdc",
+                    "volume_size": "200",
+                    "volume_type": "gp2",
+                    "delete_on_termination": true
+                }
+            ],
+
+            "tags": {
+                "BuildTimestamp": "{{timestamp}}",
+                "Name": "GetupEngine App",
+                "BuildRegion": "{{ .BuildRegion }}",
+                "BaseAMIName": "{{ .SourceAMIName }}",
+                "BaseAMI": "{{ .SourceAMI }}"
+            }
+        }
+
+    ],
+
+    "provisioners": [
+        {
+            "type": "shell",
+            "script": "provision.sh",
+            "execute_command": "sudo -EH bash -c '{{ .Vars }} {{ .Path }}'"
+        }
+    ],
+
+    "post-processors": [
+        {
+            "type":       "manifest",
+            "output":     "aws-openshift-manifest.json",
+            "strip_path": true
+        }
+    ]
+}

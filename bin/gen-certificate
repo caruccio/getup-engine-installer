@@ -1,0 +1,93 @@
+#!/bin/bash
+
+action=issue
+manual=0
+while [ $# -gt 0 ]; do
+    case $1 in
+        -h|--help)
+            echo "Usage: $0 (issue|renew) [--manual]"
+            exit
+        ;;
+        -m|--manual) manual=1;;
+        *) action=$1
+    esac
+    shift
+done
+
+if [ ${action} != "issue" -a ${action} != "renew" ]; then
+    echo "Usage: $0 (issue|renew) [--manual]"
+    exit 1
+fi
+
+if [ $action == renew -a $manual -eq 0 ]; then
+    echo "Adding --manual: Renew can not be automated at this time."
+    manual=1
+    sleep 3
+fi
+
+export AZUREDNS_SUBSCRIPTIONID=$AZURE_SUBSCRIPTION_ID
+export AZUREDNS_TENANTID=$AZURE_TENANT_ID
+export AZUREDNS_APPID=$AZURE_CLIENT_ID
+export AZUREDNS_CLIENTSECRET=$AZURE_CLIENT_SECRET
+
+set -e
+
+CERTS_DIR=$STATE_DIR/certs
+mkdir -p $CERTS_DIR
+
+function issue()
+{
+    local zone=$1
+
+    echo
+    echo "Issuing certificates for $zone"
+    echo
+    if [ -e $CERTS_DIR/${zone}.crt ]; then
+        echo Already exists: $CERTS_DIR/${zone}.crt
+        echo Remove and try again
+        return
+    fi
+
+    local extra
+    if [ $manual -eq 1 ]; then
+        extra="--dns --yes-I-know-dns-manual-mode-enough-go-ahead-please"
+    else
+        extra="--dns dns_$PROVIDER"
+    fi
+
+    /getup-engine/acme.sh/acme.sh --issue $extra \
+        -d "${zone}" \
+        -d "*.${zone}" \
+        --home $STATE_DIR/letsencrypt \
+        --cert-file $CERTS_DIR/${zone}.crt \
+        --key-file $CERTS_DIR/${zone}.key \
+        --ca-file $CERTS_DIR/ca-${zone}.crt \
+        --fullchain-file $CERTS_DIR/fullchain-${zone}.crt
+}
+
+function renew()
+{
+    local zone=$1
+
+    echo
+    echo "Renewing certificates for $zone"
+    echo
+
+    /getup-engine/acme.sh/acme.sh \
+        --renew \
+        --dns \
+        --yes-I-know-dns-manual-mode-enough-go-ahead-please \
+        -d "${zone}" \
+        -d "*.${zone}" \
+        --home $STATE_DIR/letsencrypt \
+        --cert-file $CERTS_DIR/${zone}.crt \
+        --key-file $CERTS_DIR/${zone}.key \
+        --ca-file $CERTS_DIR/ca-${zone}.crt \
+        --fullchain-file $CERTS_DIR/fullchain-${zone}.crt
+}
+
+$action ${CLUSTER_ZONE}
+
+if [ ${CLUSTER_ZONE} != ${APPS_ZONE} ]; then
+   $action ${APPS_ZONE}
+fi

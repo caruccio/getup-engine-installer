@@ -1,0 +1,143 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  generation: 1
+  labels:
+    app: grafana
+  name: grafana
+  namespace: openshift-metrics
+spec:
+  podManagementPolicy: Parallel
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: grafana
+  serviceName: ""
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: grafana
+      name: grafana
+    spec:
+      containers:
+      - args:
+        - -provider=openshift
+        - -https-address=:8443
+        - -http-address=
+        - -email-domain=*
+        - -upstream=http://localhost:3000
+        - -client-id=system:serviceaccount:openshift-metrics:grafana
+        - '-openshift-sar={"resource": "namespaces", "verb": "get", "resourceName":
+          "openshift-metrics", "namespace": "openshift-metrics"}'
+        - '-openshift-delegate-urls={"/": {"resource": "namespaces", "verb": "get",
+          "resourceName": "openshift-metrics", "namespace": "openshift-metrics"}}'
+        - -tls-cert=/etc/tls/private/tls.crt
+        - -tls-key=/etc/tls/private/tls.key
+        - -client-secret-file=/var/run/secrets/kubernetes.io/serviceaccount/token
+        - -cookie-secret-file=/etc/proxy/secrets/session_secret
+        - -openshift-ca=/etc/pki/tls/cert.pem
+        - -openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        - -skip-auth-regex=^/metrics
+        image: openshift/oauth-proxy:v1.1.0
+        imagePullPolicy: IfNotPresent
+        name: grafana-proxy
+        ports:
+        - containerPort: 8443
+          name: web
+          protocol: TCP
+        resources:
+          requests:
+{% if openshift_grafana_oauth_proxy_memory_requests is defined and openshift_grafana_oauth_proxy_memory_requests is not none %}
+            memory: "{{ openshift_grafana_oauth_proxy_memory_requests }}"
+{% endif %}
+{% if openshift_grafana_oauth_proxy_cpu_requests is defined and openshift_grafana_oauth_proxy_cpu_requests is not none %}
+            cpu: "{{ openshift_grafana_oauth_proxy_cpu_requests }}"
+{% endif %}
+          limits:
+{% if openshift_grafana_oauth_proxy_memory_limit is defined and openshift_grafana_oauth_proxy_memory_limit is not none %}
+            memory: "{{ openshift_grafana_oauth_proxy_memory_limit }}"
+{% endif %}
+{% if openshift_grafana_oauth_proxy_cpu_limit is defined and openshift_grafana_oauth_proxy_cpu_limit is not none %}
+            cpu: "{{ openshift_grafana_oauth_proxy_cpu_limit }}"
+{% endif %}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/tls/private
+          name: grafana-tls
+        - mountPath: /etc/proxy/secrets
+          name: grafana-secrets
+
+      - image: grafana/grafana:5.1.0
+        imagePullPolicy: IfNotPresent
+        name: grafana
+        env:
+          - name: GF_ADMIN_USERNAME
+            value: admin
+          - name: GF_ADMIN_PASSWORD
+            value: admin
+          - name: GF_SECRET_KEY
+            value: updatemenow
+        resources:
+          requests:
+{% if openshift_grafana_memory_requests is defined and openshift_grafana_memory_requests is not none %}
+            memory: "{{ openshift_grafana_memory_requests }}"
+{% endif %}
+{% if openshift_grafana_cpu_requests is defined and openshift_grafana_cpu_requests is not none %}
+            cpu: "{{ openshift_grafana_cpu_requests }}"
+{% endif %}
+          limits:
+{% if openshift_grafana_memory_limit is defined and openshift_grafana_memory_limit is not none %}
+            memory: "{{ openshift_grafana_memory_limit }}"
+{% endif %}
+{% if openshift_grafana_cpu_limit is defined and openshift_grafana_cpu_limit is not none %}
+            cpu: "{{ openshift_grafana_cpu_limit }}"
+{% endif %}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/grafana
+          name: grafana-config
+        - mountPath: /var/lib/grafana
+          name: grafana-data
+
+      dnsPolicy: ClusterFirst
+{% if openshift_grafana_node_selector is iterable and openshift_grafana_node_selector | length > 0 %}
+      nodeSelector:
+{% for key, value in openshift_grafana_node_selector.items() %}
+        {{ key }}: "{{ value }}"
+{% endfor %}
+{% endif %}
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: grafana
+      serviceAccountName: grafana
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsUser: 0
+
+      volumes:
+      - name: grafana-secrets
+        secret:
+          defaultMode: 420
+          secretName: grafana-proxy
+      - configMap:
+          defaultMode: 420
+          name: grafana
+        name: grafana-config
+      - name: grafana-tls
+        secret:
+          defaultMode: 420
+          secretName: grafana-tls
+      - name: grafana-data
+{% if openshift_grafana_storage_type == 'pvc' %}
+        persistentVolumeClaim:
+          claimName: {{ openshift_grafana_pvc_name }}
+{% else %}
+        emptyDir: {}
+{% endif %}
+  updateStrategy:
+    type: RollingUpdate

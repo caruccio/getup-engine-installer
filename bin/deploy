@@ -1,0 +1,35 @@
+#!/bin/bash
+
+set -eu
+
+cd /getup-engine
+
+echo "#MARK - `date` - Creating infastructure"
+./terraform/deploy -y
+echo "#MARK - `date` -  Finished creating infastructure"
+
+echo "#MARK - `date` - Installing cluster"
+./ansible/deploy
+echo "#MARK - `date` - Finished Installing cluster"
+
+############################################################
+#echo "#MARK - `date` - Dumping environment"
+#
+#cd /state
+#
+#ENV_FILES=(
+#    config
+#    hosts
+#    id_rsa
+#    getupcloud.env
+#    terraform.tfstate
+#    terraform-out.env
+#)
+#
+#for file in ${ENV_FILES[*]}; do
+#    echo
+#    echo "#MARK - `date` - $file"
+#    cat $file
+#done
+#
+#echo "#MARK - `date` - Finished dumping environment"

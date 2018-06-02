@@ -1,0 +1,162 @@
+---
+- name: Create temp directory
+  command: mktemp -d /tmp/grafana-XXXXXX
+  register: mktemp
+  changed_when: False
+  check_mode: no
+
+- set_fact:
+    tempdir: "{{ mktemp.stdout }}"
+
+- template:
+    src: grafana.ini.j2
+    dest: "{{ tempdir }}/grafana.ini"
+  vars:
+    grafana_public_url: "https://grafana.{{ getupcloud_apps_zone }}"
+  changed_when: no
+
+- name: Create grafana configs
+  oc_configmap:
+    state: present
+    name: grafana
+    namespace: "{{ openshift_prometheus_namespace }}"
+    from_file:
+      grafana.ini: "{{ tempdir }}/grafana.ini"
+
+- name: Set grafana secrets
+  oc_secret:
+    state: present
+    name: grafana-proxy
+    namespace: "{{ openshift_prometheus_namespace }}"
+    contents:
+      - path: session_secret
+        data: "{{ 43 | lib_utils_oo_random_word }}="
+  changed_when: no
+
+- name: Create grafana serviceaccount
+  block:
+    - oc_serviceaccount:
+        state: present
+        name: grafana
+        namespace: "{{ openshift_prometheus_namespace }}"
+        secrets:
+          - grafana-secret
+    - shell: >
+        {{ oc }}
+        -n {{ openshift_prometheus_namespace }}
+        annotate
+        --overwrite
+        serviceaccount/grafana
+        serviceaccounts.openshift.io/oauth-redirectreference.long='{"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"grafana"}}'
+        serviceaccounts.openshift.io/oauth-redirectreference.short='{"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"grafana-short"}}'
+
+- name: Add privileged SCC to grafana serviceaccount
+  oc_adm_policy_user:
+    state: present
+    user: "system:serviceaccount:{{ openshift_prometheus_namespace }}:grafana"
+    namespace: "{{ openshift_prometheus_namespace }}"
+    resource_kind: scc
+    resource_name: anyuid
+
+- name: Add cluster-role to grafana serviceaccount
+  oc_adm_policy_user:
+    state: present
+    user: "system:serviceaccount:{{ openshift_prometheus_namespace }}:grafana"
+    namespace: "{{ openshift_prometheus_namespace }}"
+    resource_kind: cluster-role
+    resource_name: cluster-reader
+
+- name: Create grafana service
+  block:
+    - oc_service:
+        name: grafana
+        namespace: "{{ openshift_prometheus_namespace }}"
+        state: present
+        ports:
+          - port: 442
+            protocol: TCP
+            targetPort: 8443
+        selector:
+          app: grafana
+        session_affinity: None
+        service_type: ClusterIP
+    - shell: >
+        {{ oc }}
+        -n {{ openshift_prometheus_namespace }}
+        annotate
+        --overwrite
+        service/grafana
+        prometheus.io/scheme=https
+        prometheus.io/scrape="true"
+        service.alpha.openshift.io/serving-cert-secret-name=grafana-tls
+
+- name: Create grafana routes
+  block:
+    - oc_route:
+        state: present
+        name: grafana
+        namespace: "{{ openshift_prometheus_namespace }}"
+        service_name: grafana
+        tls_termination: reencrypt
+    - oc_route:
+        state: present
+        name: grafana-short
+        namespace: "{{ openshift_prometheus_namespace }}"
+        service_name: grafana
+        tls_termination: reencrypt
+        host: "grafana.{{ getupcloud_apps_zone }}"
+
+- name: Updating routes TLS
+  oc_edit:
+    kind: routes
+    name: "{{ item }}"
+    namespace: "{{ openshift_prometheus_namespace }}"
+    content:
+      spec.tls.insecureEdgeTerminationPolicy: "Redirect"
+  with_items:
+    - grafana
+    - grafana-short
+
+- name: Create grafana PVC
+  oc_pvc:
+    state: present
+    name: "{{ openshift_grafana_pvc_name }}"
+    namespace: "{{ openshift_prometheus_namespace }}"
+    volume_capacity: "{{ openshift_grafana_pvc_size }}"
+    access_modes: "{{ openshift_grafana_pvc_access_modes }}"
+    storage_class_name: "{{ openshift_grafana_pvc_storage_class_name }}"
+  when:
+    - openshift_grafana_storage_type == 'pvc'
+    - openshift_grafana_pvc_storage_class_name != ''
+
+- name: Create grafana PVC
+  oc_pvc:
+    state: present
+    name: "{{ openshift_grafana_pvc_name }}"
+    namespace: "{{ openshift_prometheus_namespace }}"
+    volume_capacity: "{{ openshift_grafana_pvc_size }}"
+    access_modes: "{{ openshift_grafana_pvc_access_modes }}"
+  when:
+    - openshift_grafana_storage_type == 'pvc'
+    - openshift_grafana_pvc_storage_class_name == ''
+
+- template:
+    src: grafana.j2
+    dest: "{{ tempdir }}/grafana.yml"
+  changed_when: no
+
+- name: Create grafana statefulset
+  oc_obj:
+    state: present
+    namespace: "{{ openshift_prometheus_namespace }}"
+    kind: statefulset
+    name: grafana
+    files:
+      - "{{ tempdir }}/grafana.yml"
+    delete_after: yes
+
+- name: Delete temp dir
+  file:
+    name: "{{ tempdir }}"
+    state: absent
+  changed_when: False

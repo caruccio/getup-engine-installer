@@ -1,0 +1,9 @@
+#!/bin/bash
+
+image=getup-engine:${1:-v3.7}
+dockerfile=Dockerfile-${1:-v3.7}
+
+echo "---> Building $image from $dockerfile"
+
+[ "${NO_PULL}" != 1 ] && git pull
+sudo docker build . -t $image -f $dockerfile

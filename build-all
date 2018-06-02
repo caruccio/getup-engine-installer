@@ -1,0 +1,22 @@
+#!/bin/bash
+
+export NO_PULL=1
+git pull
+sleep 2
+
+latest=v3.9
+for release in v3.6 v3.7 v3.9; do
+    (
+        rcolor=$(tput sgr0)
+        color=$(tput sgr0 && tput setaf ${release#*.})
+        ./build $release 2>&1 | sed -e "s/\(.*\)/${color}\1${rcolor}/"
+    ) &
+done
+wait
+
+tput sgr0 && tput setaf 10 && tput bold
+echo
+echo
+echo "---> Tagging: getup-engine:$latest -> getup-engine:latest"
+sudo docker tag getup-engine:$latest getup-engine:latest
+tput sgr0

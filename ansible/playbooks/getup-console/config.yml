@@ -1,0 +1,8 @@
+---
+- name: Install Getup Web Console
+  hosts: oo_first_master
+  tags:
+    - getup-console
+  tasks:
+    - include_role:
+        name: getup-console

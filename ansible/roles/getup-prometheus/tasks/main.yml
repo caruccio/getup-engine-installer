@@ -1,0 +1,172 @@
+---
+- name: Create temp directory
+  command: mktemp -d /tmp/prometheus-XXXXXX
+  register: mktemp
+  changed_when: False
+  check_mode: no
+
+- set_fact:
+    tempdir: "{{ mktemp.stdout }}"
+
+- name: Create node-exporter serviceaccount
+  oc_serviceaccount:
+    state: present
+    name: node-exporter
+    namespace: default
+
+- name: Add privileged SCC to node-exporter serviceaccount
+  oc_adm_policy_user:
+    state: present
+    user: "system:serviceaccount:default:node-exporter"
+    namespace: default
+    resource_kind: scc
+    resource_name: privileged
+
+- template:
+    src: node-exporter.j2
+    dest: "{{ tempdir }}/node-exporter.yml"
+  changed_when: no
+
+- name: Create node-exporter daemonset
+  oc_obj:
+    state: present
+    namespace: default
+    kind: daemonset
+    name: node-exporter
+    files:
+      - "{{ tempdir }}/node-exporter.yml"
+    delete_after: yes
+
+- name: Create prometheus internal-only service
+  oc_service:
+    name: prometheus-http
+    namespace: "{{ openshift_prometheus_namespace }}"
+    state: present
+    ports:
+      - port: 80
+        protocol: TCP
+        targetPort: 9090
+    selector:
+      app: prometheus
+    session_affinity: None
+    service_type: ClusterIP
+
+- name: Create prometheus short route
+  oc_route:
+    state: present
+    name: prometheus-short
+    namespace: "{{ openshift_prometheus_namespace }}"
+    host: "prometheus.{{ getupcloud_apps_zone }}"
+    service_name: prometheus
+    tls_termination: reencrypt
+
+
+- name: Add cluster-role to prometheus serviceaccount
+  block:
+    - oc_adm_policy_user:
+        state: present
+        user: "system:serviceaccount:{{ openshift_prometheus_namespace }}:prometheus"
+        namespace: openshift-metrics
+        resource_kind: cluster-role
+        resource_name: system:node-admin
+    - shell: >
+        {{ oc }}
+        -n {{ openshift_prometheus_namespace }}
+        annotate
+        --overwrite
+        serviceaccount/prometheus
+        serviceaccounts.openshift.io/oauth-redirectreference.prom-short='{"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"prometheus-short"}}'
+
+- name: Disable prometheus self-scrape
+  shell: >
+    {{ oc }}
+    -n {{ openshift_prometheus_namespace }}
+    annotate
+    --overwrite
+    service/prometheus
+    prometheus.io/scrape="false"
+
+- oc_obj:
+    state: list
+    kind: service
+    namespace: default
+    name: router
+  register: router_svc_list
+
+- set_fact:
+    router_svc: "{{ router_svc_list.results.results[0] }}"
+
+- template:
+    src: prometheus.yml.j2
+    dest: "{{ tempdir }}/prometheus.yml"
+  vars:
+    stats_username: "{{ router_svc['metadata']['annotations']['prometheus.openshift.io/username'] | default('') }}"
+    stats_password: "{{ router_svc['metadata']['annotations']['prometheus.openshift.io/password'] | default('') }}"
+    cluster_zone: "{{ getupcloud_cluster_zone }}"
+    cluster_name: "{{ getupcloud_cluster_name }}"
+  changed_when: no
+
+- template:
+    src: prometheus.getup.rules.j2
+    dest: "{{ tempdir }}/prometheus.getup.rules"
+  vars:
+    stats_username: "{{ router_svc['metadata']['annotations']['prometheus.openshift.io/username'] | default('') }}"
+    stats_password: "{{ router_svc['metadata']['annotations']['prometheus.openshift.io/password'] | default('') }}"
+    cluster_zone: "{{ getupcloud_cluster_zone }}"
+    cluster_name: "{{ getupcloud_cluster_name }}"
+  changed_when: no
+
+- name: Replace prometheus configmap
+  oc_configmap:
+    state: present
+    name: prometheus
+    namespace: "{{ openshift_prometheus_namespace }}"
+    from_file:
+      prometheus.yml: "{{ tempdir }}/prometheus.yml"
+      prometheus.getup.rules: "{{ tempdir }}/prometheus.getup.rules"
+
+- template:
+    src: alertmanager.yml.j2
+    dest: "{{ tempdir }}/alertmanager.yml"
+  vars:
+    pager_duty_service_key: "{{ getupcloud_pager_duty_service_key }}"
+    slack_operations_api_url: "{{ getupcloud_slack_operations_api_url }}"
+    slack_operations_channel: "{{ getupcloud_slack_operations_channel }}"
+  changed_when: no
+  when:
+    - getupcloud_slack_operations_webhook is defined and getupcloud_slack_operations_webhook != ""
+
+- name: Replace prometheus-alerts configmap
+  oc_configmap:
+    state: present
+    name: prometheus-alerts
+    namespace: "{{ openshift_prometheus_namespace }}"
+    from_file:
+      alertmanager.yml: "{{ tempdir }}/alertmanager.yml"
+  when:
+    - getupcloud_slack_operations_webhook is defined and getupcloud_slack_operations_webhook != ""
+
+# This is being done by dockerfile until we find a better solution
+#- name: Config prometheus to listen on all interfaces
+# oc edit statefulset/prometheus
+#    -> spec.template.spec.containers[name=prometheus].args = --web.listen-address=0.0.0.0:9090
+- name: Try restart prometheus (best-effort)
+  shell: >
+    {{ oc }}
+    -n {{ openshift_prometheus_namespace }}
+    delete pod/prometheus-0
+  ignore_errors: true
+
+- name: Delete temp dir
+  file:
+    name: "{{ tempdir }}"
+    state: absent
+  changed_when: False
+
+- name: Add permission to admin
+  oc_adm_policy_user:
+    state: present
+    user: "{{ getupcloud_api_admin_username }}"
+    namespace: "{{ openshift_prometheus_namespace }}"
+    resource_kind: role
+    resource_name: edit

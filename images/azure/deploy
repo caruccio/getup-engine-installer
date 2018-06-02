@@ -1,0 +1,48 @@
+#!/bin/bash
+
+set -e
+
+ROOT_DIR=${0%/*}
+
+function build()
+{
+    if [ -x $ROOT_DIR/pre-deploy ]; then
+        source $ROOT_DIR/pre-deploy
+    fi
+    local plan=terraform.plan
+    envsubst < terraform.tfvars.in > terraform.tfvars
+    echo Terraform Vars:
+    cat terraform.tfvars
+    echo
+
+    echo Creating resources
+    terraform validate
+    terraform plan -state=$ROOT_DIR/terraform.tfstate -out=${plan}
+    terraform apply -state-out=$ROOT_DIR/terraform.tfstate ${plan}
+    eval $(terraform output | tr -d ' ')
+
+    for prefix in bastion node; do
+        local image=$prefix
+        local vm=$prefix-$SUFFIX
+        az vm deallocate --resource-group ${AZURE_RESOURCE_GROUP} --name $vm && \
+        az vm generalize --resource-group ${AZURE_RESOURCE_GROUP} --name $vm &
+
+        echo Removing old image $image
+        az image delete --resource-group ${AZURE_RESOURCE_GROUP} --name $image || true
+
+        echo 'Waiting for all running process to finish...'
+        wait
+        echo Building image $image
+        az image create --resource-group ${AZURE_RESOURCE_GROUP} --name $image --source $vm
+    done
+
+    echo Cleaning resources
+    terraform destroy -state=$ROOT_DIR/terraform.tfstate -force
+
+    if [ -x $ROOT_DIR/post-deploy ]; then
+        source $ROOT_DIR/post-deploy
+    fi
+}
+
+cd $ROOT_DIR
+build

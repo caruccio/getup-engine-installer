@@ -1,0 +1,44 @@
+#!/bin/bash
+
+echo Applying labels...
+echo
+
+# new hosts will receive `color=green` from terraform
+oc label node 'color=blue' -l 'role=infra' || true
+
+INFRA_BLUE=( $(oc get node -o name -l role=infra,color=blue) )
+INFRA_GREEN=( $(oc get node -o name -l role=infra,color=green) )
+INFRA_ALL=( ${INFRA_BLUE[*]} ${INFRA_GREEN[*]} )
+
+echo Swaping schedulability...
+echo
+oc adm manage-node --schedulable=true --selector 'role=infra,color=green'
+oc adm manage-node --schedulable=false --selector 'role=infra,color=blue'
+
+echo Scaling out infra services to green nodes...
+echo
+oc -n default scale \
+    --replicas=${#INFRA_ALL[*]} \
+    dc/router dc/docker-registry
+
+# provider specific rollout
+${0%/*}/scripts/infra-rollout-$PROVIDER ${INFRA_ALL[*]}
+
+echo Draining blue nodes...
+oc adm drain --force --delete-local-data --ignore-daemonsets ${INFRA_BLUE[*]}
+
+echo Scaling infra service back to ${#INFRA_GREEN[*]} nodes
+oc -n default scale \
+    --replicas=${#INFRA_GREEN[*]} \
+    dc/router dc/docker-registry
+
+echo
+echo Old nodes:
+oc get node -o name -l role=infra,color=blue
+echo ${INFRA_BLUE[*]}
+
+echo
+echo New nodes:
+oc get node -o name -l role=infra,color=green
+echo ${INFRA_GREEN[*]}
+

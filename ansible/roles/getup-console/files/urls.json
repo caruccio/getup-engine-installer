@@ -1,0 +1,25 @@
+"urls": {
+    "default": "en",
+
+    "en": {
+        "autoDeploy":           "https://docs.openshift.org/latest/dev_guide/deployments/basic_deployment_operations.html#image-change-trigger",
+        "incrementalBuild":     "https://github.com/openshift/source-to-image/blob/master/docs/builder_image.md#save-artifacts",
+        "pricePage":            "https://getupcloud.com/pricing/#1461985168038-7bc4b8cd-2a8a",
+        "helpCenter":           "https://ajuda.getupcloud.com/hc",
+        "cnameRoot":            "https://ajuda.getupcloud.com/hc/en-us/articles/221486987",
+        "sponsorUrlOpenshift":  "https://getupcloud.com/technologies/openshift/",
+        "sponsorUrlDocker":     "https://getupcloud.com/technologies/docker/",
+        "sponsorUrlKubernetes": "https://getupcloud.com/technologies/kubernetes/"
+    },
+
+    "pt": {
+        "autoDeploy":           "https://docs.openshift.org/latest/dev_guide/deployments/basic_deployment_operations.html#image-change-trigger",
+        "incrementalBuild":     "https://blog.getupcloud.com/docker-build-incremental-a7b31f31185",
+        "pricePage":            "https://getupcloud.com/pt-br/precos/#1461985168038-7bc4b8cd-2a8a",
+        "helpCenter":           "https://ajuda.getupcloud.com/hc",
+        "cnameRoot":            "https://ajuda.getupcloud.com/hc/pt-br/articles/221486987",
+        "sponsorUrlOpenshift":  "https://getupcloud.com/technologies/openshift/",
+        "sponsorUrlDocker":     "https://getupcloud.com/technologies/docker/",
+        "sponsorUrlKubernetes": "https://getupcloud.com/technologies/kubernetes/"
+    }
+}

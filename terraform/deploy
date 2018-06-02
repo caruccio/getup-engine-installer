@@ -1,0 +1,128 @@
+#!/bin/bash
+
+export NEWRELIC_LICENSE_KEY=${NEWRELIC_LICENSE_KEY}
+export REGISTRY_PREFIX=${REGISTRY_PREFIX:+$REGISTRY_PREFIX-}
+export TERRAFORM_BIN=${TERRAFORM_BIN:-terraform}
+export STATE_DIR=${TERRAFORM_STATE_DIR:-/state}
+export ROOT_DIR="$(dirname $0)"
+
+echo Sourcing $STATE_DIR/getupengine.env
+source $STATE_DIR/getupengine.env
+
+if [ -z "${PROVIDER}" -o ! -d "${ROOT_DIR}/${PROVIDER}" ]; then
+    echo Missing or unknown provider $PROVIDER
+    exit 1
+fi
+
+if [ "${PROVIDER}" == azure ]; then
+    echo Checking if Azure is logged in...
+    if ! az account show 2>/dev/null; then
+        az account get-access-token &>/dev/null || az login || exit 1
+    fi
+fi
+
+if [ -z "${NAME}" ]; then
+    echo 'Missing deploy name'
+    exit 1
+fi
+
+export PREFIX="${NAME}-"
+
+#scale_master=0
+scale_infra=0
+scale_app=0
+
+destroy=0
+assume_yes=0
+assume_no=0
+no_plan=0
+dry_run=0
+opts=""
+plan=${STATE_DIR}/terraform.plan
+
+for opt; do
+    case $1 in
+#        --scale-master) shift; scale_master=${1};;
+        --scale-infra) shift; scale_infra=${1};;
+        --scale-app) shift; scale_app=${1};;
+        --destroy) destroy=1;;
+        --yes|-y) assume_yes=1;;
+        --no|-n) assume_no=1;;
+        --plan) shift; plan=${1};;
+        --no-plan) no_plan=1;;
+        --dry-run) dry_run=1;;
+        *) opts="$opts $1"
+    esac
+    shift
+done
+
+if [ $scale_infra -gt 0 ]; then
+    scale_to=$((scale_infra + INFRA_COUNT))
+    echo "Will scale infra to $scale_to nodes ($INFRA_COUNT + $scale_infra)..."
+    export INFRA_COUNT=$scale_to
+fi
+
+if [ $scale_app -gt 0 ]; then
+    scale_to=$((scale_app + APP_COUNT))
+    echo "Will scale app to $scale_to nodes ($APP_COUNT + $scale_app)..."
+    export APP_COUNT=$scale_to
+fi
+
+set -eu
+
+[ -d ${STATE_DIR} ] || mkdir -p ${STATE_DIR}
+
+cd ${ROOT_DIR}/${PROVIDER}
+
+envsubst < ./terraform.tfvars.in > ${STATE_DIR}/terraform.tfvars
+
+echo Validating...
+${TERRAFORM_BIN} validate -var-file=${STATE_DIR}/terraform.tfvars
+
+if [ $destroy == 1 ]; then
+    echo "Destroying... [$plan]"
+
+    if [ $assume_yes == 1 ]; then
+        opts="$opts -force"
+    fi
+    exec ${TERRAFORM_BIN} destroy -var-file=${STATE_DIR}/terraform.tfvars ${opts} -state=${STATE_DIR}/terraform.tfstate
+fi
+
+if [ $no_plan == 0 ]; then
+    echo "Planning... [$plan]"
+    ${TERRAFORM_BIN} plan -var-file=${STATE_DIR}/terraform.tfvars ${opts} -out=${plan} -state=${STATE_DIR}/terraform.tfstate
+fi
+
+if [ $assume_no == 1 ]; then
+    exit 0
+elif [ $assume_yes != 1 ]; then
+    echo
+    read -p "Apply changes from plan $plan? [yes/no] " y
+    if [ "${y}" != 'yes' ]; then
+        echo exiting...
+        exit
+    fi
+fi
+
+if [ $dry_run == 1 ]; then
+    exit 0
+fi
+
+echo Applying...
+${TERRAFORM_BIN} apply -state-out=${STATE_DIR}/terraform.tfstate ${plan} ${opts}
+ret=$?
+
+echo Converting output
+${TERRAFORM_BIN} output -json -state=${STATE_DIR}/terraform.tfstate | /getup-engine/terraform/json2env > $STATE_DIR/terraform-out.env
+
+if [ $ret -eq 0 -a $scale_infra -gt 0 ]; then
+    echo Updating state: INFRA_COUNT=$INFRA_COUNT
+    sed -ie "s/INFRA_COUNT=.*/INFRA_COUNT=${INFRA_COUNT}/" $STATE_DIR/getupengine.env
+fi
+
+if [ $ret -eq 0 -a $scale_app -gt 0 ]; then
+    echo Updating state: APP_COUNT=$APP_COUNT
+    sed -ie "s/APP_COUNT=.*/APP_COUNT=${APP_COUNT}/" $STATE_DIR/getupengine.env
+fi
+
+exit $ret

@@ -1,0 +1,8 @@
+---
+- name: Install Getup API
+  hosts: oo_first_master
+  tags:
+    - getup-api
+  tasks:
+    - include_role:
+        name: getup-api

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-zabbix-webhook
+data:
+  config.yaml: |-
+    # Webhook listening port
+    port: 8080
+    # Number of alerts the webhook queue can contains while waiting for processing
+    queueCapacity: 500
+
+    # Hostname of your zabbix server
+    zabbixServerHost: {{ zabbix_server_host }}
+    # Trapper port of your zabbix server
+    zabbixServerPort: {{ zabbix_server_port }}
+    # Look in this annotation for a zabbix host to send alerts to, if not present alert is ignored
+    zabbixHostAnnotation: {{ zabbix_host_annotation }}
+    # Items key prefix, keys will be zabbixKeyPrefix.alertname
+    zabbixKeyPrefix: prometheus

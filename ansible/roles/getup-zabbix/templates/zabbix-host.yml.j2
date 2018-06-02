@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: zabbix-host
+spec:
+  type: ExternalName
+  externalName: {{ getupcloud_zabbix_server_host }}
+  ports:
+  - port: {{ getupcloud_zabbix_server_port }}
+    protocol: TCP
+    targetPort: {{ getupcloud_zabbix_server_port }}

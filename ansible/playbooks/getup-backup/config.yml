@@ -1,0 +1,8 @@
+---
+- name: Install Backup
+  hosts: oo_first_master
+  tags:
+    - getup-backup
+  tasks:
+  - include_role:
+      name: getup-backup

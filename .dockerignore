@@ -1,0 +1,6 @@
+*.swp
+*/*.swp
+terraform/state
+terraform/terraform.tfstate.d
+./terraform/.terraform
+.gitignore

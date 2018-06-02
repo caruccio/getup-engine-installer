@@ -1,0 +1,12 @@
+---
+- name: restart master api
+  systemd:
+    name: "{{ openshift.common.service_type }}-master-api"
+    state: restarted
+
+- name: restart master controllers
+  command: "systemctl restart {{ openshift.common.service_type }}-master-controllers"
+  retries: 3
+  delay: 5
+  register: result
+  until: result.rc == 0

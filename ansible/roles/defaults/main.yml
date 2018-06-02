@@ -1,0 +1,71 @@
+---
+oc: "/bin/oc"
+getupcloud_vendor_name: "getupcloud"
+getupcloud_vendor_title: "GetupCloud"
+getupcloud_vendor_namespace: "getup.io"
+
+getupcloud_namespace: "getup"
+getupcloud_install_api: true
+getupcloud_install_console: true
+getupcloud_install_billing: true
+getupcloud_install_backup: false
+
+getupcloud_api_repository: "git@github.com:getupcloud/getup-api.git"
+getupcloud_api_repository_branch: "stable"
+getupcloud_api_repository_key_file: "/state/getup-api-id_rsa"
+
+getupcloud_backup_storage_kind: "hosted"
+getupcloud_api_template_name_prefix: "getup-api"
+template_name: ""
+getupcloud_api_template_selector: "provider=getupcloud,component=getup-api"
+getupcloud_database_managed_hostname: ""
+getupcloud_database_managed_username: ""
+getupcloud_database_managed_password: ""
+getupcloud_database_managed_api_name: ""
+getupcloud_database_managed_usage_name: ""
+
+getupcloud_api_storage_backend: ""
+getupcloud_api_azure_storage_account_name: ""
+getupcloud_api_azure_storage_account_key: ""
+getupcloud_api_azure_storage_container_name: ""
+getupcloud_api_aws_access_key_id: ""
+getupcloud_api_aws_secret_access_key: ""
+getupcloud_api_aws_storage_bucket_name: ""
+getupcloud_api_aws_location: ""
+
+getupcloud_billing_repository: "git@github.com:getupcloud/getup-usage-monitor.git"
+getupcloud_billing_repository_branch: "master"
+getupcloud_billing_repository_key_file: "/state/getup-billing-id_rsa"
+
+getupcloud_console_urls_path: "files/urls.json"
+getupcloud_console_enable_module_billing: true
+getupcloud_console_enable_module_prices: false
+
+getupcloud_observer_repository: "https://github.com/getupcloud/observer.git"
+getupcloud_observer_repository_branch: "master"
+getupcloud_observer_template_name: "observer"
+getupcloud_observer_message_frequency: 50
+
+getupcloud_pager_duty_service_key: ""
+getupcloud_slack_operations_webhook: ""
+getupcloud_slack_operations_channel: "#operations"
+
+# TODO: read from openshift facts
+openshift_prometheus_namespace: "openshift-metrics"
+
+getupcloud_zabbix_server_port: 10051
+getupcloud_zabbix_host_annotation: "zabbix_host"
+getupcloud_alertmanager_zabbix_webhook_replicas: 2
+
+
+# Grafana
+openshift_grafana_storage_type: 'emptydir'
+openshift_grafana_pvc_name: 'grafana-data'
+openshift_grafana_pvc_size: '10G'
+openshift_grafana_pvc_access_modes: ['ReadWriteOnce']
+openshift_grafana_pvc_storage_class_name: ''
+
+openshift_grafana_memory_requests: null
+openshift_grafana_memory_limit: null
+openshift_grafana_cpu_requests: null
+openshift_grafana_cpu_limit: null

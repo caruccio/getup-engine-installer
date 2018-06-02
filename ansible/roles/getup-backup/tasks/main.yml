@@ -1,0 +1,8 @@
+---
+- import_tasks: aws.yml
+  when:
+    - getupcloud_backup_storage_kind is defined and getupcloud_backup_storage_kind == "s3"
+
+- import_tasks: azure.yml
+  when:
+    - getupcloud_backup_storage_kind is defined and getupcloud_backup_storage_kind == "blobstorage"

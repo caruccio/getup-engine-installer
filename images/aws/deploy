@@ -1,0 +1,42 @@
+#!/bin/bash
+
+set -e
+
+ROOT_DIR=${0%/*}
+packerOptions="$@"
+
+if [ "${USE_HIGH_PERF_DISKS}" == yes ]; then
+    export HIGH_PERF_DISK_TYPE=io1
+    export HIGH_PERF_DISK_IOPS=${HIGH_PERF_DISK_IOPS:-1000}
+else
+    export HIGH_PERF_DISK_TYPE=gp2
+    export HIGH_PERF_DISK_IOPS=${HIGH_PERF_DISK_IOPS:-300} # makes no sense...
+fi
+
+if [ -z "${PACKER_AWS_SUBNET_ID}" -a -v PACKER_AWS_VPC_ID ]; then
+    export PACKER_AWS_SUBNET_ID=$(aws ec2 describe-subnets --filters Name=vpc-id,Values=${PACKER_AWS_VPC_ID} \
+            --query 'Subnets[*].SubnetId | [0]' --output text)
+    echo Using $PACKER_AWS_SUBNET_ID
+fi
+
+# aws ec2 create-security-group --group-name packer --vpc-id $PACKER_AWS_VPC_ID  --description 'Temporary SG for packer'
+# aws ec2 authorize-security-group-ingress --group-id $SG --port 22 --cidr 0.0.0.0/0 --protocol tcp
+
+function build()
+{
+    if [ -x $ROOT_DIR/pre-deploy ]; then
+        source $ROOT_DIR/pre-deploy
+    fi
+
+    for file in *.json; do
+        packer validate $file
+        packer build $packerOptions $file
+    done
+
+    if [ -x $ROOT_DIR/post-deploy ]; then
+        source $ROOT_DIR/post-deploy
+    fi
+}
+
+cd $ROOT_DIR
+build

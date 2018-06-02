@@ -1,0 +1,95 @@
+---
+
+- name: Ensure namespace
+  oc_project:
+    state: present
+    name: "{{ getupcloud_namespace }}"
+
+- name: Create console service
+  oc_service:
+    namespace: "{{ getupcloud_namespace }}"
+    name: console
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: console
+    session_affinity: None
+    service_type: ClusterIP
+
+- name: Create console route
+  oc_route:
+    state: present
+    name: portal
+    namespace: "{{ getupcloud_namespace }}"
+    service_name: console
+    host: "{{ getupcloud_portal_endpoint }}"
+    cacert_path: "/etc/origin/master/named_certificates/ca-{{ getupcloud_cluster_zone }}.crt"
+    cert_path: "/etc/origin/master/named_certificates/{{ getupcloud_cluster_zone }}.crt"
+    key_path: "/etc/origin/master/named_certificates/{{ getupcloud_cluster_zone }}.key"
+  with_items:
+    - { name: "portal", host: "{{ getupcloud_portal_endpoint }}" }
+
+- name: Update route
+  oc_edit:
+    kind: routes
+    name: portal
+    namespace: "{{ getupcloud_namespace }}"
+    content:
+      spec.tls.insecureEdgeTerminationPolicy: "Redirect"
+
+- name: Generate console config
+  template:
+    src: "templates/config.json.j2"
+    dest: "/tmp/config.json"
+  vars:
+    cluster_zone: "{{ getupcloud_cluster_zone }}"
+    apps_zone: "{{ getupcloud_apps_zone }}"
+    vendor_name: "{{ getupcloud_vendor_name }}"
+    vendor_title: "{{ getupcloud_vendor_title }}"
+    vendor_namespace: "{{ getupcloud_vendor_namespace }}"
+    router_external_ips: "{{ getupcloud_console_router_external_ips.split() | default([]) }}"
+    api_hostname: "{{ getupcloud_api_endpoint }}"
+    hawkular_hostname: "{{ openshift_metrics_hawkular_hostname }}"
+    user_hostname: "{{ getupcloud_gapi_endpoint }}"
+    enable_module_billing: "{{ getupcloud_console_enable_module_billing | to_json }}"
+    enable_module_prices: "{{ getupcloud_console_enable_module_prices | to_json }}"
+    urls: "{{ lookup('file', getupcloud_console_urls_path) }}"
+
+- name: Create console config
+  oc_configmap:
+    state: present
+    name: console
+    namespace: "{{ getupcloud_namespace }}"
+    from_file:
+      config.json: /tmp/config.json
+
+- name: Generate console deployment
+  template:
+    src: console.yaml.j2
+    dest: /tmp/console.yaml
+
+- name: Create console deployment
+  oc_obj:
+    state: present
+    namespace: "{{ getupcloud_namespace }}"
+    kind: deploymentconfig
+    name: console
+    files:
+      - "/tmp/console.yaml"
+    delete_after: yes
+
+- name: Wait for Console to become available
+  # Using curl here since the uri module requires python-httplib2 and
+  # wait_for port doesn't provide health information.
+  command: >
+    curl --silent -k --max-time 5 https://portal.{{ getupcloud_cluster_zone }}/.build
+  args:
+    warn: no
+  register: build
+  until: build.stdout != ''
+  retries: 120
+  delay: 3
+  changed_when: false

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -eu
+
+[ "${AWS_ACCESS_KEY_ID}" ] && \
+[ "${AWS_SECRET_ACCESS_KEY}" ] && \
+[ "${REGISTRY_AWS_ACCESS_KEY_ID}" ] && \
+[ "${REGISTRY_AWS_SECRET_ACCESS_KEY}" ]
+
+set -x
+
+ansible-playbook -i ./hosts /usr/share/ansible/openshift-ansible/playbooks/byo/openshift-node/scaleup.yml
+ansible-playbook -i ./hosts getup.yaml

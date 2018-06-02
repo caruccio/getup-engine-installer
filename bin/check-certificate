@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# args: domain certfile
+#
+# https://stackoverflow.com/questions/14565597/pyopenssl-reading-certificate-pkey-file
+#
+
+from __future__ import print_function
+import sys
+import re
+import OpenSSL.crypto
+
+COLOR_YELLOW = '\x1b[1;33;40m'
+COLOR_RED = '\x1b[1;31;40m'
+COLOR_GREEN = '\x1b[1;32;40m'
+COLOR_RESET = '\x1b[0m'
+
+domain, certfile = sys.argv[1:]
+print(COLOR_YELLOW, '\rValidating certificate %s for %s' % (certfile, domain), COLOR_RESET, file=sys.stderr)
+print(file=sys.stderr)
+
+st_cert = open(sys.argv[2], 'rt').read()
+cert = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, st_cert)
+
+def to_pattern_list(domain):
+    return [
+        '.*' if component == '*' else '^{}$'.format(component)
+        for component
+        in domain.strip().lstrip('DNS:').split('.')
+    ]
+
+def get_domains(cert):
+    for comp in cert.get_subject().get_components():
+        name, value = comp
+        if name.upper() == 'CN':
+            print('    ---> Found CN:', value, file=sys.stderr)
+            re_value = to_pattern_list(value)
+            yield value
+
+    for i in range(cert.get_extension_count()):
+        ext = cert.get_extension(i)
+        if ext.get_short_name() == 'subjectAltName':
+            sa_names = str(ext).replace(',', '').split()
+            for sa_name in sa_names:
+                print('    ---> Found SubjectAltName:', sa_name, file=sys.stderr)
+                yield sa_name
+
+def match(domain, domain_pattern):
+    rev_components = list(reversed(domain.split('.')))
+    rev_domain_pattern = list(reversed(domain_pattern))
+    try:
+        for i in range(max(len(rev_components), len(rev_domain_pattern))):
+            regex = rev_domain_pattern[i]
+            comp = rev_components[i]
+            if not re.match(regex, comp):
+                return False
+        return True
+    except IndexError:
+        return False
+
+for domain_patttern in [ to_pattern_list(d) for d in get_domains(cert) ]:
+    if match(domain, domain_patttern):
+        print(COLOR_GREEN, ' ✓ ---> Match', domain, 'with regex list', domain_patttern, COLOR_RESET, file=sys.stderr)
+        sys.exit(0)
+
+print(COLOR_RED, ' ✗ ---> Certificate {} does not match {}'.format(certfile, domain), COLOR_RESET, file=sys.stderr)
+sys.exit(2)

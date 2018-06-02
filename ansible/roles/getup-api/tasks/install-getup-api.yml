@@ -1,0 +1,260 @@
+---
+- name: Copy cluster-metrics script
+  copy:
+    src: files/cluster-metrics
+    dest: /usr/local/bin/cluster-metrics
+    mode: 0755
+
+- name: Ensure namespace
+  oc_project:
+    state: present
+    name: "{{ getupcloud_namespace }}"
+
+- name: Add cluster-admin role to service accounts
+  oc_adm_policy_user:
+    user: "system:serviceaccount:{{ getupcloud_namespace }}:{{item}}"
+    resource_kind: cluster-role
+    resource_name: cluster-admin
+    state: present
+  with_items:
+    - project-deployer
+    - default
+
+- name: Check API already exists
+  command: >
+    {{ oc }}
+    get dc/api
+    -n {{ getupcloud_namespace }}
+    -o name
+    --ignore-not-found
+  register: oc_api
+
+- set_fact:
+    has_getup_api_deploy: "{{ oc_api.stdout_lines | length | bool }}"
+
+- name: Create temp directory
+  command: mktemp -d /tmp/getupcloud-api-XXXXXX
+  register: repo_dir
+  changed_when: False
+  check_mode: no
+  when: not has_getup_api_deploy
+
+
+- name: Copy deploy key
+  copy:
+    src: "{{ getupcloud_api_repository_key_file }}"
+    dest: "{{ repo_dir.stdout }}/id_rsa"
+    mode: 0600
+  when:
+  - not has_getup_api_deploy
+
+- name: Clone getup-api repo
+  git:
+    repo: "{{ getupcloud_api_repository }}"
+    version: "{{ getupcloud_api_repository_branch }}"
+    key_file: "{{ repo_dir.stdout }}/id_rsa"
+    accept_hostkey: yes
+    clone: yes
+    dest: "{{ repo_dir.stdout }}/getup-api"
+  when: not has_getup_api_deploy
+
+- debug:
+    msg: "Cloned getup-api to {{ repo_dir.stdout }}/getup-api"
+  when: not has_getup_api_deploy
+
+#- name: Delete getup-api templates
+#  oc_obj:
+#    state: absent
+#    kind: Template
+#    namespace: "{{ getupcloud_namespace }}"
+#    selector: "{{ getupcloud_api_template_selector }}"
+
+- name: Verify installed templates
+  command: >
+    {{ oc }}
+    get template
+    -n {{ getupcloud_namespace }}
+    -l {{ getupcloud_api_template_selector }}
+    -o name
+    --ignore-not-found
+  register: oc_templates
+
+- name: Set getup api managed template name
+  set_fact:
+    template_name: "{{ getupcloud_api_template_name_prefix }}-{{ getupcloud_database_mode }}"
+
+- name: Create getup-api template
+  oc_obj:
+    state: present
+    kind: template
+    namespace: "{{ getupcloud_namespace }}"
+    name: "{{ template_name }}"
+    files:
+      - "{{ repo_dir.stdout }}/getup-api/template-{{ getupcloud_database_mode }}.yaml"
+  when:
+  - not has_getup_api_deploy
+  - template_name not in oc_templates.stdout_lines
+
+- name: Process and execute template
+  oc_process:
+    state: present
+    create: true
+    template_name: "{{ template_name }}"
+    namespace: "{{ getupcloud_namespace }}"
+    reconcile: true
+    params:
+      CLUSTER_ZONE: "{{ getupcloud_cluster_zone }}"
+      APPS_ZONE: "{{ getupcloud_apps_zone }}"
+      PORTAL_ENDPOINT: "{{ getupcloud_portal_endpoint }}"
+      GAPI_ENDPOINT: "{{ getupcloud_gapi_endpoint }}"
+      USAGE_ENDPOINT: "{{ getupcloud_usage_endpoint }}"
+      OPENSHIFT_PUBLIC_API_BASE_URL: "https://{{ getupcloud_api_endpoint }}"
+      STORAGE_BACKEND: "{{ getupcloud_api_storage_backend }}"
+      AZURE_STORAGE_ACCOUNT_NAME: "{{ getupcloud_api_azure_storage_account_name }}"
+      AZURE_STORAGE_ACCOUNT_KEY: "{{ getupcloud_api_azure_storage_account_key }}"
+      AZURE_STORAGE_CONTAINER_NAME: "{{ getupcloud_api_azure_storage_container_name }}"
+      AWS_ACCESS_KEY_ID: "{{ getupcloud_api_aws_access_key_id }}"
+      AWS_SECRET_ACCESS_KEY: "{{ getupcloud_api_aws_secret_access_key }}"
+      AWS_STORAGE_BUCKET_NAME: "{{ getupcloud_api_aws_storage_bucket_name }}"
+      AWS_LOCATION: "{{ getupcloud_api_aws_location }}"
+  when:
+    - not has_getup_api_deploy
+    - getupcloud_database_mode == 'hosted'
+
+- name: Process and execute template
+  oc_process:
+    state: present
+    create: true
+    template_name: "{{ template_name }}"
+    namespace: "{{ getupcloud_namespace }}"
+    reconcile: true
+    params:
+      CLUSTER_ZONE: "{{ getupcloud_cluster_zone }}"
+      APPS_ZONE: "{{ getupcloud_apps_zone }}"
+      PORTAL_ENDPOINT: "{{ getupcloud_portal_endpoint }}"
+      GAPI_ENDPOINT: "{{ getupcloud_gapi_endpoint }}"
+      USAGE_ENDPOINT: "{{ getupcloud_usage_endpoint }}"
+      OPENSHIFT_PUBLIC_API_BASE_URL: "https://{{ getupcloud_api_endpoint }}"
+      STORAGE_BACKEND: "{{ getupcloud_api_storage_backend }}"
+      AZURE_STORAGE_ACCOUNT_NAME: "{{ getupcloud_api_azure_storage_account_name }}"
+      AZURE_STORAGE_ACCOUNT_KEY: "{{ getupcloud_api_azure_storage_account_key }}"
+      AZURE_STORAGE_CONTAINER_NAME: "{{ getupcloud_api_azure_storage_container_name }}"
+      AWS_ACCESS_KEY_ID: "{{ getupcloud_api_aws_access_key_id }}"
+      AWS_SECRET_ACCESS_KEY: "{{ getupcloud_api_aws_secret_access_key }}"
+      AWS_STORAGE_BUCKET_NAME: "{{ getupcloud_api_aws_storage_bucket_name }}"
+      AWS_LOCATION: "{{ getupcloud_api_aws_location }}"
+      DATABASE_HOSTNAME: "{{ getupcloud_database_managed_hostname }}"
+      DATABASE_USER: "{{ getupcloud_database_managed_username }}"
+      DATABASE_PASSWORD: "{{ getupcloud_database_managed_password }}"
+      DATABASE_NAME_API: "{{ getupcloud_database_managed_api_name }}"
+      DATABASE_NAME_USAGE: "{{ getupcloud_database_managed_usage_name }}"
+  when:
+    - not has_getup_api_deploy
+    - getupcloud_database_mode == 'managed'
+
+- name: Reading certificates
+  block:
+    - slurp:
+        src: "/etc/origin/master/named_certificates/ca-{{ getupcloud_cluster_zone }}.crt"
+      register: cluster_zone_cacert
+
+    - slurp:
+        src: "/etc/origin/master/named_certificates/{{ getupcloud_cluster_zone }}.crt"
+      register: cluster_zone_cert
+
+    - slurp:
+        src: "/etc/origin/master/named_certificates/{{ getupcloud_cluster_zone }}.key"
+      register: cluster_zone_key
+
+- name: Updating routes TLS
+  oc_edit:
+    kind: routes
+    name: "{{ item.name }}"
+    namespace: "{{ getupcloud_namespace }}"
+    content:
+      spec.tls.caCertificate: "{{ cluster_zone_cacert['content'] | b64decode }}"
+      spec.tls.certificate: "{{ cluster_zone_cert['content'] | b64decode }}"
+      spec.tls.key: "{{ cluster_zone_key['content'] | b64decode }}"
+      spec.tls.insecureEdgeTerminationPolicy: "Redirect"
+  with_items:
+    - { name: "gapi", host: "{{ getupcloud_gapi_endpoint }}" }
+    - { name: "usage", host: "{{ getupcloud_usage_endpoint }}" }
+
+- name: Wait for databases to become ready
+  wait_for:
+    host: "mysql-{{ item }}.getup.svc"
+    port: 3306
+    delay: 2
+    sleep: 2
+    state: present
+  with_items:
+    - usage
+    - api
+  when:
+    - getupcloud_database_mode == 'hosted'
+
+- name: Wait for applications to become available
+  wait_for:
+    host: "{{ item }}.getup.svc"
+    port: 8080
+    delay: 2
+    sleep: 2
+    timeout: 1200
+    state: present
+  with_items:
+    - usage
+    - api
+
+- name: Check superuser exists
+  command: >
+    {{ oc }}
+    -n getup
+    -c api
+    rsh dc/api
+    bash -c './manage.py customer exists -u {{ getupcloud_api_admin_username }}'
+  register: has_superuser
+
+##
+## Users are created from fixtures
+##
+#- name: Create superuser
+#  command: >
+#    {{ oc }}
+#    -n getup
+#    -c api
+#    rsh dc/api
+#    bash -c './manage.py createsuperuser --email {{ getupcloud_api_admin_username }} <<<{{ getupcloud_api_admin_password }}'
+#  register: createuser_superuser
+#  when: has_superuser.stdout == 'False'
+#
+#- name: Check impersonate user exists
+#  command: >
+#    {{ oc }}
+#    -n getup
+#    -c api
+#    rsh dc/api
+#    bash -c './manage.py customer exists -u {{ getupcloud_api_impersonate_username }}'
+#  register: has_impersonate_user
+#
+#- name: Create impersonate user
+#  command: >
+#    {{ oc }}
+#    rsh
+#    -n getup
+#    -c api
+#    dc/api
+#    bash -c
+#    './manage.py createuser {{ getupcloud_api_impersonate_username }} --gapi-base-url http://api:8080 -n "Impersonate User" -p "{{ getupcloud_api_impersonate_password }}"'
+#  register: createuser_impersonate
+#  when: has_impersonate_user.stdout == 'False'
+
+- name: Load initial data
+  shell: >
+    {{ oc }}
+    rsh
+    -n getup
+    -c api
+    dc/api
+    bash -c 'find . -name initial_data.json | xargs ./manage.py loaddata'
+  when: has_superuser.stdout == 'False'
+

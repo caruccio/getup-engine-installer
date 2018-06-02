@@ -1,0 +1,46 @@
+### Reconciliar roles
+#
+#> Antes de aplicar verifique as alterações antes executando sem `--confirm`
+#
+#master# oadm policy reconcile-cluster-roles \
+#        --additive-only=true \
+#        --confirm
+#
+#    master# oadm policy reconcile-cluster-role-bindings \
+#        --exclude-groups=system:authenticated \
+#        --exclude-groups=system:authenticated:oauth \
+#        --exclude-groups=system:unauthenticated \
+#        --exclude-users=system:anonymous \
+#        --additive-only=true \
+#        --confirm
+#
+#    master# oadm policy reconcile-cluster-role-bindings \
+#        system:build-strategy-jenkinspipeline \
+#        -o name \
+#        --confirm
+#
+#    master# oadm policy reconcile-sccs \
+#        --additive-only=true \
+#            --confirm
+#
+#
+#
+#
+#Remover role binding self-provisioners
+#
+#    master# oc delete clusterrolebinding/self-provisioners
+#
+#Alterar verbos do `resources` do `projects` para get,list,watch
+#
+#    master# oc edit clusterrole/admin
+#    - apiGroups:
+#      - ""
+#      attributeRestrictions: null
+#      resources:
+#      - projects
+#      verbs:
+#      - get
+#      - list
+#      - watch
+#
+#

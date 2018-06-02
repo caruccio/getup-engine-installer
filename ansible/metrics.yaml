@@ -1,0 +1,9 @@
+---
+- include: /usr/share/ansible/openshift-ansible/playbooks/byo/openshift-cluster/initialize_groups.yml
+- include: /usr/share/ansible/openshift-ansible/playbooks/common/openshift-cluster/evaluate_groups.yml
+
+- name: Install metrics v1.5.1
+  hosts: masters
+  become: yes
+  roles:
+    - openshift_metrics15

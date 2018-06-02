@@ -1,0 +1,73 @@
+<html class='no-js'>
+<head>
+    <title>Getup Cloud (beta)</title>
+    <link href="/console/extensions/css/auth.css" media="all" rel="stylesheet" type="text/css" />
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <meta charset="UTF-8">
+</head>
+<body class='console authentication signin'>
+    <div class='content'>
+        <header class='getup'>
+            <div class='wrap'>
+                <h1 class='getup-sprite logo'>Getup</h1>
+            </div>
+        </header>
+        <section class='auth'>
+            <h1>Docker Container Platform</h1>
+            <div class='signin' id='signin'>
+                <h2>Bem-vindo a Getup 2gen</h2>
+                <form action="{{ .Action }}" id='form-authentication' method='post'>
+                    <input type="hidden" name="{{ .Names.Then }}" value="{{ .Values.Then }}">
+                    <input type="hidden" name="{{ .Names.CSRF }}" value="{{ .Values.CSRF }}">
+
+                    <fieldset>
+                        <div>
+                            <input type="text" id="inputUsername" autofocus="autofocus" type="text" name="{{ .Names.Username }}" value="{{ .Values.Username }}" placeholder="Username">
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <div>
+                            <input type="password" id="inputPassword" type="password" name="{{ .Names.Password }}" value="" placeholder="Password">
+                        </div>
+                    </fieldset>
+
+                    <div class='pull-left'>
+                        <img src='/console/extensions/images/astro.png'>
+                    </div>
+                    <div class='pull-right'>
+                        <fieldset>
+                            <button class='getup-sprite'>Entrar</button>
+                        </fieldset>
+                    </div>
+                    <!--
+                    <div class='pull-right'>
+                        <a href="https://api.getup.io/api/v1/auth/password/reset/">Esqueçeu sua senha?</a>
+                    </div>
+                    <div class='pull-right'>
+                        <a href="https://api.getup.io/api/v1/auth/register/account/">Ainda não possui uma conta?</a>
+                    </div>
+                    -->
+                </form>
+                {{ if .Error }}
+                    <div id="flash">
+                        <div class="alert alert-error">{{ .Error }}</div>
+                    </div>
+                {{ end }}
+            </div>
+            <div id="powered-by">
+                <div>Powered by</div>
+                <a href="https://www.openshift.org/">
+                    <img class="openshift-logo" src="/console/extensions/images/openshift-logo.svg">
+                </a>
+                <a href="https://www.docker.com/">
+                    <img class="docker-logo" src="/console/extensions/images/docker-logo-h.svg">
+                </a>
+                <a href="http://kubernetes.io/">
+                    <img class="k8s-logo" src="/console/extensions/images/k8s-logo.svg">
+                </a>
+            </div>
+        </section>
+    </div>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{
+    "vendorName":           "{{ vendor_name }}",
+    "vendorTitle":          "{{ vendor_title }}",
+    "vendorNamespace":      "{{ vendor_namespace }}",
+    "clusterZone":          "{{ cluster_zone }}",
+    "appsZone":             "{{ apps_zone }}",
+    "routerExternalIPs":    {{ router_external_ips }},
+    "openshiftURL":         "https://{{ api_hostname }}",
+    "hawkularURL":          "https://{{ hawkular_hostname }}",
+    "userURL":              "https://{{ user_hostname }}",
+    "signupURL":            "https://{{ user_hostname }}/api/v1/auth/register/account/",
+    "loginURL":             "https://{{ user_hostname }}/api/v1/auth/login/",
+    "logoutURL":            "https://{{ user_hostname }}/api/v1/auth/logout/",
+    "resetPasswdURL":       "https://{{ user_hostname }}/api/v1/auth/password/reset/",
+    "defaultIconClass":     "icon-default",
+    "generatedBy":          "{{ vendor_title }} WebConsole",
+    "defaultContainerSize": "small",
+    "buildLogLevel":        "0",
+    "segmentWriteKey":      null,
+
+
+    "enableModule": {
+        "billing":          {{ enable_module_billing }},
+        "prices":           {{ enable_module_prices }}
+    },
+
+    {{ urls }}
+}

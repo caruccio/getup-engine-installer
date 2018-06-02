@@ -1,0 +1,475 @@
+#!/usr/bin/env bash
+
+echo Welcome to gen-config for Getup Engine
+echo
+
+if [ $# -lt 1 -o $# -gt 2 -o "$1" == "-h" -o "$1" == "--help" ]; then
+    echo "Usage: $0 [cluster-name|dir] <outputfile>"
+    echo "Where"
+    echo "  cluster-name    $PWD/state/[cluster-name]"
+    echo "  dir-name        full path for existing dir"
+    echo "  <outputfile>    optional output file, (default: [state-dir]/getupengine.env)"
+    exit 1
+fi
+
+if [ -d "state/$1" ]; then
+    stateDir="$PWD/state/$1"
+elif [ -d "$1" ]; then
+    stateDir="$1"
+elif ! grep -q / <<<$1; then
+    echo "Creating state dir $PWD/state/$1"
+    stateDir="$PWD/state/$1"
+    mkdir -p $stateDir
+    echo
+else
+    echo "Invalid cluster-name or state dir: $1"
+    exit 1
+fi
+
+echo State dir is $stateDir
+sleep 1
+
+export outputFile=${2:-$stateDir/getupengine.env}
+
+#if [ -z "${TARGET_OPENSHIFT_RELEASE}" ]; then
+#    echo "Env var TARGET_OPENSHIFT_RELEASE is empty. Are you running this outside the container?"
+#    exit 1
+#fi
+
+if [ -e $outputFile ]; then
+   source $outputFile
+   bkpFile="${outputFile}.$(date +%s).bkp"
+   cat $outputFile > ${bkpFile}
+   echo "Created backup ${bkpFile}"
+fi
+
+export NAME=${stateDir##*/}
+exec 3>${outputFile}
+
+awsRegions=(
+    ap-northeast-1
+    ap-northeast-2
+    ap-northeast-3
+    ap-south-1
+    ap-southeast-1
+    ap-southeast-2
+    ca-central-1
+    cn-north-1
+    cn-northwest-1
+    eu-central-1
+    eu-west-1
+    eu-west-2
+    eu-west-3
+    sa-east-1
+    us-east-1
+    us-east-2
+    us-gov-west-1
+    us-west-1
+    us-west-2
+)
+
+azureRegions=(
+    australiaeast
+    australiasoutheast
+    brazilsouth
+    canadacentral
+    canadaeast
+    centralindia
+    centralus
+    eastasia
+    eastus
+    eastus2
+    francecentral
+    francesouth
+    japaneast
+    japanwest
+    koreacentral
+    koreasouth
+    northcentralus
+    northeurope
+    southcentralus
+    southeastasia
+    southindia
+    uksouth
+    ukwest
+    westcentralus
+    westeurope
+    westindia
+    westus
+    westus2
+)
+
+gceRegions=(
+
+)
+
+provider_is()
+{
+    [ $PROVIDER == $1 ]
+}
+
+sel()
+{
+    local varName=${1}
+    shift
+    local options=( $@ )
+    local promptMesg=${varName//_/ }; promptMesg=${promptMesg,,}; promptMesg=${promptMesg^}
+    local currentValue; eval "currentValue=\$$varName"
+
+    if [ ${#options[@]} -eq 1 ]; then
+        echo "Auto-selected value: $options"
+        ex "$varName=${options}"
+        return
+    fi
+
+    echo "----------------------------------------------"
+    echo "---> Select" $(sed -e 's/^\s*\(.*\)\s*$/\1/' <<<$promptMesg)
+    echo
+    if [ -n "${currentValue}" ]; then
+        local PS3="Type number to select [${currentValue}]: "
+    else
+        local PS3="Type number to select: "
+    fi
+
+    unset _value
+    local _value
+    select _value in ${options[@]}; do
+        break
+    done
+
+    ex "$varName=${_value}"
+}
+
+mult()
+{
+    local varName=${1}
+    shift
+    local options=( $@ )
+    local promptMesg=${varName//_/ }; promptMesg=${promptMesg,,}; promptMesg=${promptMesg^}
+    local currentValue; eval "currentValue=\$$varName"
+
+    echo "----------------------------------------------"
+    echo "---> Type number to select" $(sed -e 's/^\s*\(.*\)\s*$/\1/' <<<$promptMesg)
+    echo
+
+    if [ -n "${currentValue}" ]; then
+        local PS3="Space-separated list of numbers to select (* for all) [$currentValue]: "
+    else
+        local PS3="Space-separated list of numbers to select (* for all): "
+    fi
+
+    select _ in ${options[@]}; do
+        break
+    done
+
+    unset _value
+    local _value
+    if [ "$REPLY" == '*' ]; then
+        _value="${options[*]}"
+    else
+        local i
+        for i in ${REPLY}; do
+            _value+="${options[$((i - 1))]} "
+        done
+    fi
+
+    ex "$varName=${_value}"
+}
+
+rd()
+{
+    local varName=${1}
+    local promptMesg=${varName//_/ }; promptMesg=${promptMesg,,}; promptMesg=${promptMesg^}
+    local defaultValue=${2}
+    local value=''
+
+    if [ -v $varName ]; then
+        eval "defaultValue=\$$varName"
+    fi
+
+    echo "----------------------------------------------"
+    if [ -n "$defaultValue" ]; then
+        read -p "--> $promptMesg [$defaultValue]: " value
+        if [ -z "$value" ]; then
+            value="$defaultValue"
+        fi
+    else
+        read -p "--> $promptMesg: " value
+    fi
+
+    ex "$varName=$value"
+}
+
+ask()
+{
+    local promptMesg="${1}"
+    if [ $# -eq 2 ]; then
+        local defaultValue=${2}
+    else
+        local varName=${2}
+        local defaultValue=${3}
+
+        if [ -v $varName ]; then
+            eval "defaultValue='\$$varName'"
+        fi
+    fi
+    local value=''
+
+    echo "----------------------------------------------"
+    while [ "${value}" != y -a "${value}" != n ]; do
+        read \
+            -p "--> $promptMesg [$([ ${defaultValue:-_} == 'y' ] && echo Y || echo y )/$([ ${defaultValue:-_} == 'n' ] && echo N || echo n )]: "
+            value="$REPLY"
+
+        if [ -n "$defaultValue" -a -z "$value" ]; then
+            value="$defaultValue"
+        fi
+        value=${value,,}
+    done
+
+    ex "# ${promptMesg} -> $value"
+    if [ -v varName ]; then
+        ex "$varName=$value"
+    fi
+    [ ${value} == y ]
+}
+
+ex()
+{
+    local escaped="$(sed -e "s/=\(.*\)/=\"\1\"/" <<<$@)"
+    [ "${1::1}" == "_" ] || echo "$escaped" >&3
+    [ ${1::1} == '#' ] || eval "export '$@'"
+}
+
+get_aws_key_pairs()
+{
+    echo -ne "\nReading SSH key pairs..." >&2
+    aws ec2 describe-key-pairs \
+        --query 'KeyPairs[*].KeyName' --output text || true
+    echo >&2
+}
+
+list_aws_hosted_zones()
+{
+    echo -ne "\nReading Route53 hosted zones... " >&2
+    aws route53 list-hosted-zones --query 'HostedZones[*].[Id, Name]' --output text | sed -e 's,/hostedzone/,,' -e 's/.$//'
+    echo >&2
+}
+
+get_aws_hosted_zone_name()
+{
+    echo -ne "\nReading Route53 hosted zone $1... " >&2
+    local zoneName=$(aws route53 get-hosted-zone \
+        --id $1 --query 'HostedZone.Name' --output text || true)
+    echo ${zoneName%%.}
+    echo ${zoneName%%.} >&2
+}
+
+list_aws_availability_zones()
+{
+    local zone=$1
+    echo -ne "\nReading availability zones for region $zone... " >&2
+    aws ec2 describe-availability-zones --query 'AvailabilityZones[*].ZoneName' --output text
+    echo >&2
+}
+
+ex "# Auto-generated by $0"
+ex NAME=$NAME
+sel PROVIDER aws azure #gce
+ex CLUSTER_ID="${CLUSTER_ID:-owned}"
+
+if provider_is aws; then
+    rd AWS_ACCESS_KEY_ID ${AWS_ACCESS_KEY_ID}
+    rd AWS_SECRET_ACCESS_KEY ${AWS_SECRET_ACCESS_KEY}
+    sel AWS_DEFAULT_REGION ${awsRegions[@]}
+
+    avalZones=( $(list_aws_availability_zones $AWS_DEFAULT_REGION) )
+    mult AWS_AVAILABILITY_ZONES "${avalZones[@]}"
+    AZ_LIST=( ${AWS_AVAILABILITY_ZONES[*]} )
+    AZ_COUNT=${#AZ_LIST[*]}
+
+    hostedZones=""
+    while read line; do
+        hostedZones+="$(awk '{printf("%s:%s", $1, $2)}' <<<$line) "
+    done < <(list_aws_hosted_zones)
+
+    if [ -z "${hostedZones}" ]; then
+        echo "No Route53 Hosted Zones found. Please provide external zone:"
+        rd CLUSTER_ZONE $CLUSTER_ZONE
+    else
+        # Cluster zone
+        sel _CLUSTER_AWS_ZONE "${hostedZones[@]}"
+        ex CLUSTER_ZONE_ID=$(cut -f1 -d: <<<$_CLUSTER_AWS_ZONE)
+    fi
+    ex CLUSTER_ZONE=$(cut -f2 -d: <<<$_CLUSTER_AWS_ZONE)
+
+    # Apps zone
+    sel _APPS_AWS_ZONE "${hostedZones[@]}"
+
+    ex APPS_ZONE_ID=$(cut -f1 -d: <<<$_APPS_AWS_ZONE)
+    if [ "${CLUSTER_ZONE_ID}" != "${APPS_ZONE_ID}" ]; then
+        ex APPS_ZONE=$(cut -f2 -d: <<<$_APPS_AWS_ZONE)
+    else
+        ex "APPS_ZONE=${CLUSTER_ZONE}"
+    fi
+
+    keyPairs=( $(get_aws_key_pairs) )
+    if [ -z ${keyPairs} ]; then
+        echo "No AWS SSH Key Pair found on region $AWS_DEFAULT_REGION"
+        echo "Please upload/create at least one key pair and try again"
+        exit 1
+    fi
+    sel AWS_KEY_NAME ${keyPairs[*]}
+
+elif provider_is azure; then
+
+    echo "Create a Service Principal on your Azure account prior to continue"
+    echo <<EOF
+    $ az group create -n \${AZURE_RESOURCE_GROUP} -l \$AZURE_REGION
+    $ AZURE_SUBSCRIPTION_ID=\`az account show | jq .id\`
+    $ az ad sp create-for-rbac --role=Contributor --scopes=/subscriptions/\${AZURE_SUBSCRIPTION_ID}/resourceGroups/\${AZURE_RESOURCE_GROUP}
+EOF
+
+    ask 'Continue?' y
+
+    rd AZURE_SUBSCRIPTION_ID ${AZURE_SUBSCRIPTION_ID}
+    rd AZURE_TENANT_ID ${AZURE_TENANT_ID}
+    rd AZURE_CLIENT_ID ${AZURE_CLIENT_ID}
+    rd AZURE_CLIENT_SECRET ${AZURE_CLIENT_SECRET}
+    rd AZURE_RESOURCE_GROUP
+    sel AZURE_LOCATION ${azureRegions[@]}
+
+    rd CLUSTER_ZONE
+    rd APPS_ZONE ${CLUSTER_ZONE}
+
+elif provider_is gce; then
+    ex GCE_CLUSTER_PREFIX=${NAME}
+    ex GOOGLE_CREDENTIALS=/state/google.json
+    rd GOOGLE_REGION
+
+    rd CLUSTER_ZONE
+    rd APPS_ZONE
+    rd GOOGLE_PROJECT
+    rd REGISTRY_GCE_BUCKET_NAME
+    #rd REGISTRY_GCE_KEY_FILE
+fi
+
+rd MASTER_COUNT $AZ_COUNT
+rd INFRA_COUNT $AZ_COUNT
+rd APP_COUNT $((AZ_COUNT * 2))
+
+if provider_is aws; then
+    rd AWS_INSTANCE_BASTION ${AWS_INSTANCE_BASTIONL:-t2.small}
+    rd AWS_INSTANCE_MASTER ${AWS_INSTANCE_MASTER:-m4.large}
+    rd AWS_INSTANCE_INFRA ${AWS_INSTANCE_INFRA:-m4.xlarge}
+    rd AWS_INSTANCE_APP ${AWS_INSTANCE_APP:-m4.xlarge}
+    if ask "Use high performance disks (io1) where applicable?" y; then
+        ex USE_HIGH_PERF_DISK_TYPE=yes
+    else
+        ex USE_HIGH_PERF_DISK_TYPE=no
+    fi
+
+    ex OPENSHIFT_STORAGECLASS_NAME="gp2"
+    ex OPENSHIFT_MONITORING_STORAGE_TYPE="pvc"
+    ex OPENSHIFT_METRICS_STORAGE_KIND="dynamic"
+    ex OPENSHIFT_LOGGING_STORAGE_KIND="dynamic"
+    ex GETUPCLOUD_BACKUP_INSTALL=true
+
+elif provider_is azure; then
+    rd AZURE_OS_OFFER centos
+    rd AZURE_INSTANCE_BASTION ${AZURE_INSTANCE_BASTION:-Standard_DS2_v2}
+    rd AZURE_INSTANCE_MASTER ${AZURE_INSTANCE_MASTER:-Standard_DS4_v2}
+    rd AZURE_INSTANCE_INFRA ${AZURE_INSTANCE_INFRA:-Standard_DS4_v2}
+    rd AZURE_INSTANCE_APP ${AZURE_INSTANCE_APP:-Standard_DS4_v2}
+
+    ex OPENSHIFT_STORAGECLASS_NAME="standard-lrs"
+    ex OPENSHIFT_MONITORING_STORAGE_TYPE="pvc"
+    ex OPENSHIFT_METRICS_STORAGE_KIND="dynamic"
+    ex OPENSHIFT_LOGGING_STORAGE_KIND="dynamic"
+    ex GETUPCLOUD_BACKUP_INSTALL=true
+
+    ex AZURE_DATABASE_CAPACITY=200
+    ex AZURE_DATABASE_TIER=Standard
+elif provider_is gce; then
+    ex OPENSHIFT_STORAGECLASS_NAME="pd-ssd"
+    ex OPENSHIFT_MONITORING_STORAGE_TYPE="pvc"
+    ex OPENSHIFT_METRICS_STORAGE_KIND="dynamic"
+    ex OPENSHIFT_LOGGING_STORAGE_KIND="dynamic"
+    ex GETUPCLOUD_BACKUP_INSTALL=false
+fi
+
+if ask "Install Openshift Metrics (Hawkular)?" y; then
+    ex INSTALL_METRICS=true
+    ex OPENSHIFT_METRICS_IMAGE_VERSION=\${TARGET_OPENSHIFT_RELEASE}
+    ex OPENSHIFT_METRICS_STORAGE_CLASS_NAME=$OPENSHIFT_STORAGECLASS_NAME
+else
+    ex INSTALL_METRICS=false
+    ex OPENSHIFT_METRICS_IMAGE_VERSION=\${TARGET_OPENSHIFT_RELEASE}
+fi
+
+if ask "Install Openshift Monitoring (Prometheus + Alertmanager)?" y; then
+    ex INSTALL_MONITORING=true
+    #sel OPENSHIFT_MONITORING_STORAGE_CLASS_NAME ${AZ_LIST[*]}
+    ex OPENSHIFT_MONITORING_STORAGE_CLASS_NAME=${OPENSHIFT_STORAGECLASS_NAME}
+#    rd OPENSHIFT_MONITORING_RETENTION 8w
+
+    if ask "Enable Alertmanager Zabbix Webhook?" n; then
+        ex ZABBIX_ENABLED=true
+        rd ZABBIX_SERVER_HOST
+        rd ZABBIX_SERVER_PORT 10051
+    else
+        ex ZABBIX_ENABLED=false
+    fi
+else
+    ex INSTALL_MONITORING=false
+fi
+
+if ask "Install Openshift Logging (EFK)?" y; then
+    ex INSTALL_LOGGING=true
+    ex OPENSHIFT_LOGGING_IMAGE_VERSION=\${TARGET_OPENSHIFT_RELEASE}
+    ex OPENSHIFT_LOGGING_STORAGE_CLASS_NAME=$OPENSHIFT_STORAGECLASS_NAME
+else
+    ex INSTALL_LOGGING=false
+    ex OPENSHIFT_LOGGING_IMAGE_VERSION=\${TARGET_OPENSHIFT_RELEASE}
+fi
+
+if ask "Install Openshift Default ImageStreams & Templates?" y; then
+    ex INSTALL_EXAMPLES=true
+else
+    ex INSTALL_EXAMPLES=false
+fi
+
+if ask 'Integrate with slack (error messages and prometheus alerts)?' n; then
+    ex GETUPCLOUD_OBSERVER_INSTALL=true
+    rd GETUPCLOUD_SLACK_OPERATIONS_WEBHOOK
+    rd GETUPCLOUD_SLACK_OPERATIONS_CHANNEL "#$NAME-errors"
+else
+    ex GETUPCLOUD_OBSERVER_INSTALL=false
+    ex GETUPCLOUD_SLACK_OPERATIONS_WEBHOOK=""
+    ex GETUPCLOUD_SLACK_OPERATIONS_CHANNEL=""
+fi
+
+rd GETUPCLOUD_VENDOR_NAME
+rd GETUPCLOUD_VENDOR_TITLE
+rd GETUPCLOUD_VENDOR_NAMESPACE ${GETUPCLOUD_VENDOR_NAME}.io
+rd GETUPCLOUD_ROUTER_EXTERNAL_IPS
+
+if ask 'Enable web console billing module?' y; then
+    ex GETUPCLOUD_CONSOLE_ENABLE_MODULE_BILLING=true
+else
+    ex GETUPCLOUD_CONSOLE_ENABLE_MODULE_BILLING=false
+fi
+
+if ask 'Allow web console to show offer prices?' n; then
+    ex GETUPCLOUD_CONSOLE_ENABLE_MODULE_PRICES=true
+else
+    ex GETUPCLOUD_CONSOLE_ENABLE_MODULE_PRICES=false
+fi
+
+#rd GETUPCLOUD_API_ADMIN_USERNAME admin@${CLUSTER_ZONE}
+#rd GETUPCLOUD_API_ADMIN_PASSWORD "$(openssl rand -base64 9)"
+#rd GETUPCLOUD_API_IMPERSONATE_USERNAME impersonate@${CLUSTER_ZONE}
+#rd GETUPCLOUD_API_IMPERSONATE_PASSWORD "$(openssl rand -base64 9)"
+
+echo
+echo "Generated file $outputFile"

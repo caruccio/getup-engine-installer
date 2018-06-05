@@ -154,9 +154,14 @@
 
 - name: Reading certificates
   block:
+    - stat:
+        path="/etc/origin/master/named_certificates/ca-{{ getupcloud_cluster_zone }}.crt"
+      register: stat_ca_cert_file
+
     - slurp:
         src: "/etc/origin/master/named_certificates/ca-{{ getupcloud_cluster_zone }}.crt"
       register: cluster_zone_cacert
+      when: stat_ca_cert_file.stat.exists == true
 
     - slurp:
         src: "/etc/origin/master/named_certificates/{{ getupcloud_cluster_zone }}.crt"
@@ -166,7 +171,7 @@
         src: "/etc/origin/master/named_certificates/{{ getupcloud_cluster_zone }}.key"
       register: cluster_zone_key
 
-- name: Updating routes TLS
+- name: Updating routes TLS (with CA certificate)
   oc_edit:
     kind: routes
     name: "{{ item.name }}"
@@ -179,6 +184,21 @@
   with_items:
     - { name: "gapi", host: "{{ getupcloud_gapi_endpoint }}" }
     - { name: "usage", host: "{{ getupcloud_usage_endpoint }}" }
+  when: stat_ca_cert_file.stat.exists == true
+
+- name: Updating routes TLS
+  oc_edit:
+    kind: routes
+    name: "{{ item.name }}"
+    namespace: "{{ getupcloud_namespace }}"
+    content:
+      spec.tls.certificate: "{{ cluster_zone_cert['content'] | b64decode }}"
+      spec.tls.key: "{{ cluster_zone_key['content'] | b64decode }}"
+      spec.tls.insecureEdgeTerminationPolicy: "Redirect"
+  with_items:
+    - { name: "gapi", host: "{{ getupcloud_gapi_endpoint }}" }
+    - { name: "usage", host: "{{ getupcloud_usage_endpoint }}" }
+  when: stat_ca_cert_file.stat.exists == false
 
 - name: Wait for databases to become ready
   wait_for:

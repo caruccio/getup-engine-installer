@@ -39,7 +39,6 @@
   check_mode: no
   when: not has_getup_api_deploy
 
-
 - name: Copy deploy key
   copy:
     src: "{{ getupcloud_api_repository_key_file }}"

@@ -263,7 +263,7 @@ resource "azurerm_virtual_machine" "masters" {
     vm_size               = "${var.azure_instance_master}"
 
     delete_os_disk_on_termination       = true
-    delete_data_disks_on_termination    = true
+    delete_data_disks_on_termination    = false
 
     storage_image_reference {
         id = "${data.azurerm_image.node.id}"
@@ -466,7 +466,7 @@ resource "azurerm_virtual_machine" "infras" {
     vm_size               = "${var.azure_instance_infra}"
 
     delete_os_disk_on_termination       = true
-    delete_data_disks_on_termination    = true
+    delete_data_disks_on_termination    = false
 
     storage_image_reference {
         id = "${data.azurerm_image.node.id}"
@@ -643,7 +643,7 @@ resource "azurerm_virtual_machine" "apps" {
     vm_size               = "${var.azure_instance_app}"
 
     delete_os_disk_on_termination       = true
-    delete_data_disks_on_termination    = true
+    delete_data_disks_on_termination    = false
 
     storage_image_reference {
         id = "${data.azurerm_image.node.id}"

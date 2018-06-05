@@ -1,4 +1,14 @@
 ---
+- name: Setup
+  hosts: localhost
+  connection: local
+  become: no
+  gather_facts: no
+  tags:
+    - always
+  roles:
+    - init
+
 - name: Install Getup API
   hosts: oo_first_master
   tags:

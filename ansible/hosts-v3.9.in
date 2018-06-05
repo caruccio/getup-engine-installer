@@ -1262,6 +1262,8 @@ getupcloud_vendor_name="${GETUPCLOUD_VENDOR_NAME}"
 getupcloud_vendor_title="${GETUPCLOUD_VENDOR_TITLE}"
 getupcloud_vendor_namespace="${GETUPCLOUD_VENDOR_NAMESPACE}"
 getupcloud_console_router_external_ips="${GETUPCLOUD_ROUTER_EXTERNAL_IPS}"
+getupcloud_console_enable_module_billing="${GETUPCLOUD_CONSOLE_ENABLE_MODULE_BILLING}"
+getupcloud_console_enable_module_prices="${GETUPCLOUD_CONSOLE_ENABLE_MODULE_PRICES}"
 
 getupcloud_azure_resource_group="${AZURE_RESOURCE_GROUP}"
 

@@ -33,7 +33,7 @@ getupcloud_api_aws_secret_access_key: ""
 getupcloud_api_aws_storage_bucket_name: ""
 getupcloud_api_aws_location: ""
 
-getupcloud_billing_repository: "git@github.com:getupcloud/getup-usage-monitor.git"
+getupcloud_billing_repository: "git@github.com:getupcloud/getup-usage.git"
 getupcloud_billing_repository_branch: "master"
 getupcloud_billing_repository_key_file: "/state/getup-billing-id_rsa"
 

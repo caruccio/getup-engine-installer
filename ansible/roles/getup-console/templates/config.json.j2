@@ -20,8 +20,8 @@
 
 
     "enableModule": {
-        "billing":          {{ enable_module_billing }},
-        "prices":           {{ enable_module_prices }}
+        "billing":          {{ enable_module_billing | default(false) }},
+        "prices":           {{ enable_module_prices | default(false) }}
     },
 
     {{ urls }}

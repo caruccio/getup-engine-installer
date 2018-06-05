@@ -3,7 +3,7 @@
 cluster_name=$1
 shift
 
-if [ -z "${cluster_name}" ] then
+if [ -z "${cluster_name}" ]; then
     exec docker ps --format "{{.Names}}" | \grep ^getup-engine- | sed -e 's/^getup-engine-//' | sort
 fi
 

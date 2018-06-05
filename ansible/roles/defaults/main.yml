@@ -11,7 +11,7 @@ getupcloud_install_billing: true
 getupcloud_install_backup: false
 
 getupcloud_api_repository: "git@github.com:getupcloud/getup-api.git"
-getupcloud_api_repository_branch: "stable"
+getupcloud_api_repository_branch: "master"
 getupcloud_api_repository_key_file: "/state/getup-api-id_rsa"
 
 getupcloud_backup_storage_kind: "hosted"

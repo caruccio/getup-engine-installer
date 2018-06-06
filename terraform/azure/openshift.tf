@@ -129,7 +129,6 @@ resource "random_string" "suffix" {
 
 data "azurerm_resource_group" "rg" {
   name     = "${var.azure_resource_group}"
-  location = "${var.azure_location}"
 }
 
 resource "azurerm_virtual_network" "vnet" {

@@ -48,7 +48,7 @@ RUN sed -ie \
     's/--web.listen-address=localhost:9090/--web.listen-address=0.0.0.0:9090/' \
     /usr/share/ansible/openshift-ansible/roles/openshift_prometheus/templates/prometheus.j2
 
-RUN cd / && patch -p0 < /getup-engine/ansible/patches/ansible_set_nodename.diff
+RUN cd / && for i in /getup-engine/ansible/patches/*.diff; do patch -p0 < $i; done
 
 ADD bin/ /getup-engine/bin/
 

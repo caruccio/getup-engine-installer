@@ -87,6 +87,7 @@ EOF
 			osm_api_server_args={'cloud-config':['/etc/origin/cloudprovider/azure.conf'],'cloud-provider':['azure']}
 
 			openshift_storageclass_parameters="{'kind':'managed','storageaccounttype':'Standard_LRS'}"
+			openshift_storageclass_provisioner='azure-disk'
 
 			# Azure Blob
 			# A Blob Storage must already exist.

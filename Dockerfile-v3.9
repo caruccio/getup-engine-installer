@@ -31,7 +31,8 @@ RUN echo '#1000 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers.d/allow_local_action &&
     cd /getup-engine && \
     git clone https://github.com/Neilpang/acme.sh.git && \
     cd ./acme.sh && \
-   ./acme.sh --install --force --nocron
+    ./acme.sh --install --force --nocron && \
+    curl -L https://github.com/jmespath/jp/releases/download/0.1.2/jp-linux-amd64 > /getup-engine/bin/jp
 
 ADD images/ /getup-engine/images
 ADD terraform/ /getup-engine/terraform
@@ -51,7 +52,8 @@ RUN cd / && patch -p0 < /getup-engine/ansible/patches/ansible_set_nodename.diff
 
 ADD bin/ /getup-engine/bin/
 
-RUN chmod -R go+rw /getup-engine
+RUN chmod -R go+rw /getup-engine && \
+    chmod -R +x /getup-engine/bin/
 
 USER 1000
 

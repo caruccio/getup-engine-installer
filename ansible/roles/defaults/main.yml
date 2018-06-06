@@ -36,6 +36,7 @@ getupcloud_api_aws_location: ""
 getupcloud_billing_repository: "git@github.com:getupcloud/getup-usage.git"
 getupcloud_billing_repository_branch: "master"
 getupcloud_billing_repository_key_file: "/state/getup-billing-id_rsa"
+getupcloud_billing_install_dir: "/usr/share/getup-usage"
 
 getupcloud_console_urls_path: "files/urls.json"
 getupcloud_console_enable_module_billing: true

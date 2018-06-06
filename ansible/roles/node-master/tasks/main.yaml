@@ -14,11 +14,20 @@
   tags:
     - pre-install
 
-- name: Set etcd IO priority
-  become: yes
-  shell: ionice -p `pgrep etcd` -c1 -n3
-  tags:
-    - post-install
+- name: Set etcd io priority
+  block:
+  - lineinfile:
+      path: /usr/lib/systemd/system/etcd.service
+      regexp: '^{{ item }}'
+      line: "{{ item }}"
+      insertafter: '^ExecStart='
+    with_items:
+      - 'IOSchedulingClass=realtime'
+      - 'IOSchedulingPriority=1'
+
+  - command: systemctl daemon-reload
+
+  - systemd: name=etcd state=restarted
 
 - when: openshift_cloudprovider_kind | default('') == 'azure'
   tags:

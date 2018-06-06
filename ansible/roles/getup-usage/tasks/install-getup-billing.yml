@@ -92,7 +92,7 @@
     job: >
       OPENSHIFT_MASTER_URL=https://{{ openshift_master_cluster_hostname }}
       BILLING_NAMESPACE={{ getupcloud_namespace }}
-      SERVICE_ACCOUNT=usage-collector
+      SERVICE_ACCOUNT_NAME=usage-collector
       {{ getupcloud_billing_install_dir }}/collector/pull-metrics > /var/log/getup-billing/pull-metrics.log
 
 - name: Create partials and trial control crontab
@@ -104,5 +104,5 @@
     job: >
       OPENSHIFT_MASTER_URL=https://{{ openshift_master_cluster_hostname }}
       BILLING_NAMESPACE={{ getupcloud_namespace }}
-      SERVICE_ACCOUNT=usage-collector
+      SERVICE_ACCOUNT_NAME=usage-collector
       {{ getupcloud_billing_install_dir }}/collector/make-partials > /var/log/getup-billing/make-partials.log

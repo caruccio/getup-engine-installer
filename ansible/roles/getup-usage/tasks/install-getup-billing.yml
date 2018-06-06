@@ -18,14 +18,14 @@
     key_file: "{{ tmp_dir.stdout }}/id_rsa"
     accept_hostkey: yes
     clone: yes
-    dest: "{{ tmp_dir.stdout }}"
+    dest: "{{ tmp_dir.stdout }}/getup-usage"
 
 - debug:
-    msg: "Cloned getup-usage to {{ tmp_dir.stdout }}"
+    msg: "Cloned getup-usage to {{ tmp_dir.stdout }}/getup-usage"
 
 - name: Install getup-usage collector
   git:
-    repo: "{{ tmp_dir.stdout }}"
+    repo: "{{ tmp_dir.stdout }}/getup-usage"
     version: "{{ getupcloud_billing_repository_branch }}"
     clone: yes
     dest: "{{ getupcloud_billing_install_dir }}"

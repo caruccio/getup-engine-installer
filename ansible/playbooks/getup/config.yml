@@ -29,7 +29,7 @@
 - import_playbook: ../getup-api/config.yml
   when: getupcloud_install_api | default(true) | bool
 
-- import_playbook: ../getup-billing/config.yml
+- import_playbook: ../getup-usage/config.yml
   when: getupcloud_install_billing | default(true) | bool
 
 - import_playbook: ../getup-backup/config.yml

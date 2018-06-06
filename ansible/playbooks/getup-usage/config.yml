@@ -12,7 +12,7 @@
 - name: Install Billing
   hosts: oo_first_master
   tags:
-    - getup-billing
+    - getup-usage
   tasks:
     - include_role:
-        name: getup-billing
+        name: getup-usage

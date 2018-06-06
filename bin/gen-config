@@ -323,21 +323,22 @@ if provider_is aws; then
 
 elif provider_is azure; then
 
+    rd AZURE_SUBSCRIPTION_ID ${AZURE_SUBSCRIPTION_ID}
+    rd AZURE_RESOURCE_GROUP
+    sel AZURE_LOCATION ${azureRegions[@]}
+
     echo "Create a Service Principal on your Azure account prior to continue"
     echo <<EOF
-    $ az group create -n \${AZURE_RESOURCE_GROUP} -l \$AZURE_REGION
-    $ AZURE_SUBSCRIPTION_ID=\`az account show | jq .id\`
-    $ az ad sp create-for-rbac --role=Contributor --scopes=/subscriptions/\${AZURE_SUBSCRIPTION_ID}/resourceGroups/\${AZURE_RESOURCE_GROUP}
+    az login
+    az group create -n $AZURE_RESOURCE_GROUP -l $AZURE_LOCATION
+    az ad sp create-for-rbac --role=Contributor --scopes=/subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/${AZURE_RESOURCE_GROUP}
 EOF
 
     ask 'Continue?' y
 
-    rd AZURE_SUBSCRIPTION_ID ${AZURE_SUBSCRIPTION_ID}
     rd AZURE_TENANT_ID ${AZURE_TENANT_ID}
     rd AZURE_CLIENT_ID ${AZURE_CLIENT_ID}
     rd AZURE_CLIENT_SECRET ${AZURE_CLIENT_SECRET}
-    rd AZURE_RESOURCE_GROUP
-    sel AZURE_LOCATION ${azureRegions[@]}
 
     rd CLUSTER_ZONE
     rd APPS_ZONE ${CLUSTER_ZONE}

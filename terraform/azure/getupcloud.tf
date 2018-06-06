@@ -29,8 +29,8 @@
 #
 #resource "azurerm_mysql_server" "getup" {
 #    name                        = "getupapi-${random_string.suffix.result}"
-#    location                    = "${azurerm_resource_group.rg.location}"
-#    resource_group_name         = "${azurerm_resource_group.rg.name}"
+#    location                    = "${data.azurerm_resource_group.rg.location}"
+#    resource_group_name         = "${data.azurerm_resource_group.rg.name}"
 #    sku {
 #        name        = "${lookup(local.azure_database_sku_name, var.azure_database_capacity)}"
 #        capacity    = "${var.azure_database_capacity}"
@@ -46,7 +46,7 @@
 #
 #resource "azurerm_mysql_database" "getup" {
 #  name                = "${local.api_database_name}"
-#  resource_group_name = "${azurerm_resource_group.rg.name}"
+#  resource_group_name = "${data.azurerm_resource_group.rg.name}"
 #  server_name         = "${azurerm_mysql_server.getup.name}"
 #  charset             = "utf8"
 #  collation           = "utf8_unicode_ci"
@@ -54,7 +54,7 @@
 #
 #resource "azurerm_mysql_database" "usage" {
 #  name                = "${local.usage_database_name}"
-#  resource_group_name = "${azurerm_resource_group.rg.name}"
+#  resource_group_name = "${data.azurerm_resource_group.rg.name}"
 #  server_name         = "${azurerm_mysql_server.getup.name}"
 #  charset             = "utf8"
 #  collation           = "utf8_unicode_ci"
@@ -66,8 +66,8 @@
 
 resource "azurerm_storage_account" "api" {
     name                        = "getupapi${random_string.suffix.result}"
-    location                    = "${azurerm_resource_group.rg.location}"
-    resource_group_name         = "${azurerm_resource_group.rg.name}"
+    location                    = "${data.azurerm_resource_group.rg.location}"
+    resource_group_name         = "${data.azurerm_resource_group.rg.name}"
     account_tier                = "Standard"
     account_replication_type    = "LRS"
 }
@@ -75,14 +75,14 @@ resource "azurerm_storage_account" "api" {
 resource "azurerm_storage_blob" "api" {
     name                    = "api"
     type                    = "block"
-    resource_group_name     = "${azurerm_resource_group.rg.name}"
+    resource_group_name     = "${data.azurerm_resource_group.rg.name}"
     storage_account_name    = "${azurerm_storage_account.api.name}"
     storage_container_name  = "${azurerm_storage_container.api.name}"
 }
 
 resource "azurerm_storage_container" "api" {
    name                     = "api"
-   resource_group_name      = "${azurerm_resource_group.rg.name}"
+   resource_group_name      = "${data.azurerm_resource_group.rg.name}"
    storage_account_name     = "${azurerm_storage_account.api.name}"
    container_access_type    = "container"
 }
@@ -93,15 +93,15 @@ resource "azurerm_storage_container" "api" {
 
 resource "azurerm_storage_account" "backup" {
     name                        = "getupbkp${random_string.suffix.result}"
-    location                    = "${azurerm_resource_group.rg.location}"
-    resource_group_name         = "${azurerm_resource_group.rg.name}"
+    location                    = "${data.azurerm_resource_group.rg.location}"
+    resource_group_name         = "${data.azurerm_resource_group.rg.name}"
     account_tier                = "Standard"
     account_replication_type    = "LRS"
 }
 
 resource "azurerm_storage_container" "backup" {
     name                    = "backup"
-    resource_group_name     = "${azurerm_resource_group.rg.name}"
+    resource_group_name     = "${data.azurerm_resource_group.rg.name}"
     storage_account_name    = "${azurerm_storage_account.backup.name}"
     container_access_type   = "private"
 }
@@ -109,7 +109,7 @@ resource "azurerm_storage_container" "backup" {
 resource "azurerm_storage_blob" "backup" {
     name                    = "backup"
     type                    = "block"
-    resource_group_name     = "${azurerm_resource_group.rg.name}"
+    resource_group_name     = "${data.azurerm_resource_group.rg.name}"
     storage_account_name    = "${azurerm_storage_account.backup.name}"
     storage_container_name  = "${azurerm_storage_container.backup.name}"
 }

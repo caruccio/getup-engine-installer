@@ -41,11 +41,3 @@
     - infra
   roles:
     - { role: node-infra, when: "openshift_node_labels['role'] == 'infra'" }
-
-- name: Setup StorageClass
-  hosts: oo_first_master
-  tags:
-    - master
-    - post-install
-  roles:
-    - storageclass

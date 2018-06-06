@@ -134,19 +134,19 @@ data "azurerm_resource_group" "rg" {
 
 resource "azurerm_virtual_network" "vnet" {
   name                = "vnet"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
-  location            = "${azurerm_resource_group.rg.location}"
+  resource_group_name = "${data.azurerm_resource_group.rg.name}"
+  location            = "${data.azurerm_resource_group.rg.location}"
   address_space       = ["10.0.0.0/8"]
 }
 
 data "azurerm_image" "bastion" {
     name = "bastion"
-    resource_group_name = "${azurerm_resource_group.rg.name}"
+    resource_group_name = "${data.azurerm_resource_group.rg.name}"
 }
 
 data "azurerm_image" "node" {
     name = "node"
-    resource_group_name = "${azurerm_resource_group.rg.name}"
+    resource_group_name = "${data.azurerm_resource_group.rg.name}"
 }
 
 locals {
@@ -164,7 +164,7 @@ locals {
 
 resource "azurerm_subnet" "bastion" {
   name                      = "bastion"
-  resource_group_name       = "${azurerm_resource_group.rg.name}"
+  resource_group_name       = "${data.azurerm_resource_group.rg.name}"
   virtual_network_name      = "${azurerm_virtual_network.vnet.name}"
   network_security_group_id = "${azurerm_network_security_group.bastion.id}"
   address_prefix            = "10.1.0.0/16"
@@ -172,8 +172,8 @@ resource "azurerm_subnet" "bastion" {
 
 resource "azurerm_network_security_group" "bastion" {
   name                = "bastion"
-  location            = "${azurerm_resource_group.rg.location}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
+  location            = "${data.azurerm_resource_group.rg.location}"
+  resource_group_name = "${data.azurerm_resource_group.rg.name}"
 
   security_rule {
     name                       = "allowSSHin_all"
@@ -191,16 +191,16 @@ resource "azurerm_network_security_group" "bastion" {
 
 resource "azurerm_public_ip" "bastion" {
   name                          = "bastion"
-  location                      = "${azurerm_resource_group.rg.location}"
-  resource_group_name           = "${azurerm_resource_group.rg.name}"
+  location                      = "${data.azurerm_resource_group.rg.location}"
+  resource_group_name           = "${data.azurerm_resource_group.rg.name}"
   public_ip_address_allocation  = "static"
   domain_name_label            = "bastion-${local.cluster_zone_nodot}"
 }
 
 resource "azurerm_network_interface" "bastion" {
   name                      = "bastion"
-  location                  = "${azurerm_resource_group.rg.location}"
-  resource_group_name       = "${azurerm_resource_group.rg.name}"
+  location                  = "${data.azurerm_resource_group.rg.location}"
+  resource_group_name       = "${data.azurerm_resource_group.rg.name}"
   network_security_group_id = "${azurerm_network_security_group.bastion.id}"
 
   ip_configuration {
@@ -213,8 +213,8 @@ resource "azurerm_network_interface" "bastion" {
 
 resource "azurerm_virtual_machine" "bastion" {
     name                  = "bastion"
-    location              = "${azurerm_resource_group.rg.location}"
-    resource_group_name   = "${azurerm_resource_group.rg.name}"
+    location              = "${data.azurerm_resource_group.rg.location}"
+    resource_group_name   = "${data.azurerm_resource_group.rg.name}"
     network_interface_ids = ["${element(azurerm_network_interface.bastion.*.id, count.index)}"]
     vm_size               = "${var.azure_instance_bastion}"
 
@@ -244,7 +244,7 @@ resource "azurerm_virtual_machine" "bastion" {
     }
 
     tags {
-        ResourceGroup = "${azurerm_resource_group.rg.name}"
+        ResourceGroup = "${data.azurerm_resource_group.rg.name}"
         Name          = "bastion"
     }
 }
@@ -256,8 +256,8 @@ resource "azurerm_virtual_machine" "bastion" {
 resource "azurerm_virtual_machine" "masters" {
     name                  = "master-${count.index + 1}"
     count                 = "${var.master_count}"
-    location              = "${azurerm_resource_group.rg.location}"
-    resource_group_name   = "${azurerm_resource_group.rg.name}"
+    location              = "${data.azurerm_resource_group.rg.location}"
+    resource_group_name   = "${data.azurerm_resource_group.rg.name}"
     network_interface_ids = ["${element(azurerm_network_interface.master.*.id, count.index)}"]
     availability_set_id   = "${azurerm_availability_set.master.id}"
     vm_size               = "${var.azure_instance_master}"
@@ -309,7 +309,7 @@ resource "azurerm_virtual_machine" "masters" {
     }
 
     tags {
-        ResourceGroup = "${azurerm_resource_group.rg.name}"
+        ResourceGroup = "${data.azurerm_resource_group.rg.name}"
         Name          = "master-${count.index + 1}"
         Role          = "master"
     }
@@ -318,14 +318,14 @@ resource "azurerm_virtual_machine" "masters" {
 
 resource "azurerm_availability_set" "master" {
     name                = "master"
-    location            = "${azurerm_resource_group.rg.location}"
-    resource_group_name = "${azurerm_resource_group.rg.name}"
+    location            = "${data.azurerm_resource_group.rg.location}"
+    resource_group_name = "${data.azurerm_resource_group.rg.name}"
     managed             = true
 }
 
 resource "azurerm_subnet" "master" {
     name                      = "master"
-    resource_group_name       = "${azurerm_resource_group.rg.name}"
+    resource_group_name       = "${data.azurerm_resource_group.rg.name}"
     virtual_network_name      = "${azurerm_virtual_network.vnet.name}"
     network_security_group_id = "${azurerm_network_security_group.master.id}"
     address_prefix            = "10.10.0.0/16"
@@ -334,8 +334,8 @@ resource "azurerm_subnet" "master" {
 resource "azurerm_network_interface" "master" {
     name                      = "master-${count.index + 1}"
     count                     = "${var.master_count}"
-    location                  = "${azurerm_resource_group.rg.location}"
-    resource_group_name       = "${azurerm_resource_group.rg.name}"
+    location                  = "${data.azurerm_resource_group.rg.location}"
+    resource_group_name       = "${data.azurerm_resource_group.rg.name}"
     network_security_group_id = "${azurerm_network_security_group.master.id}"
 
     ip_configuration {
@@ -348,8 +348,8 @@ resource "azurerm_network_interface" "master" {
 
 resource "azurerm_public_ip" "master" {
     name                         = "master-${count.index + 1}"
-    location                     = "${azurerm_resource_group.rg.location}"
-    resource_group_name          = "${azurerm_resource_group.rg.name}"
+    location                     = "${data.azurerm_resource_group.rg.location}"
+    resource_group_name          = "${data.azurerm_resource_group.rg.name}"
     public_ip_address_allocation = "dynamic"
     domain_name_label            = "master-${count.index + 1}-${local.cluster_zone_nodot}"
     count                        = "${var.master_count}"
@@ -357,8 +357,8 @@ resource "azurerm_public_ip" "master" {
 
 resource "azurerm_network_security_group" "master" {
     name                = "master"
-    location            = "${azurerm_resource_group.rg.location}"
-    resource_group_name = "${azurerm_resource_group.rg.name}"
+    location            = "${data.azurerm_resource_group.rg.location}"
+    resource_group_name = "${data.azurerm_resource_group.rg.name}"
 
     security_rule {
       name                       = "allowSSH_in"
@@ -459,8 +459,8 @@ resource "azurerm_network_security_group" "master" {
 resource "azurerm_virtual_machine" "infras" {
     name                  = "infra-${count.index + 1}"
     count                 = "${var.infra_count}"
-    location              = "${azurerm_resource_group.rg.location}"
-    resource_group_name   = "${azurerm_resource_group.rg.name}"
+    location              = "${data.azurerm_resource_group.rg.location}"
+    resource_group_name   = "${data.azurerm_resource_group.rg.name}"
     network_interface_ids = ["${element(azurerm_network_interface.infra.*.id, count.index)}"]
     availability_set_id   = "${azurerm_availability_set.infra.id}"
     vm_size               = "${var.azure_instance_infra}"
@@ -512,7 +512,7 @@ resource "azurerm_virtual_machine" "infras" {
     }
 
     tags {
-        ResourceGroup = "${azurerm_resource_group.rg.name}"
+        ResourceGroup = "${data.azurerm_resource_group.rg.name}"
         Name          = "infra-${count.index + 1}"
         Role          = "infra"
     }
@@ -520,14 +520,14 @@ resource "azurerm_virtual_machine" "infras" {
 
 resource "azurerm_availability_set" "infra" {
     name                = "infra"
-    location            = "${azurerm_resource_group.rg.location}"
-    resource_group_name = "${azurerm_resource_group.rg.name}"
+    location            = "${data.azurerm_resource_group.rg.location}"
+    resource_group_name = "${data.azurerm_resource_group.rg.name}"
     managed             = true
 }
 
 resource "azurerm_subnet" "infra" {
     name                      = "infra"
-    resource_group_name       = "${azurerm_resource_group.rg.name}"
+    resource_group_name       = "${data.azurerm_resource_group.rg.name}"
     virtual_network_name      = "${azurerm_virtual_network.vnet.name}"
     network_security_group_id = "${azurerm_network_security_group.infra.id}"
     address_prefix            = "10.20.0.0/16"
@@ -536,8 +536,8 @@ resource "azurerm_subnet" "infra" {
 resource "azurerm_network_interface" "infra" {
     name                      = "infra-${count.index + 1}"
     count                     = "${var.infra_count}"
-    location                  = "${azurerm_resource_group.rg.location}"
-    resource_group_name       = "${azurerm_resource_group.rg.name}"
+    location                  = "${data.azurerm_resource_group.rg.location}"
+    resource_group_name       = "${data.azurerm_resource_group.rg.name}"
     network_security_group_id = "${azurerm_network_security_group.infra.id}"
 
     ip_configuration {
@@ -550,8 +550,8 @@ resource "azurerm_network_interface" "infra" {
 
 resource "azurerm_public_ip" "infra" {
     name                         = "infra-${count.index + 1}"
-    location                     = "${azurerm_resource_group.rg.location}"
-    resource_group_name          = "${azurerm_resource_group.rg.name}"
+    location                     = "${data.azurerm_resource_group.rg.location}"
+    resource_group_name          = "${data.azurerm_resource_group.rg.name}"
     public_ip_address_allocation = "dynamic"
     domain_name_label            = "infra-${count.index + 1}-${local.cluster_zone_nodot}"
     count                        = "${var.infra_count}"
@@ -559,8 +559,8 @@ resource "azurerm_public_ip" "infra" {
 
 resource "azurerm_network_security_group" "infra" {
     name                = "infra"
-    location            = "${azurerm_resource_group.rg.location}"
-    resource_group_name = "${azurerm_resource_group.rg.name}"
+    location            = "${data.azurerm_resource_group.rg.location}"
+    resource_group_name = "${data.azurerm_resource_group.rg.name}"
 
     security_rule {
         name                       = "allowSSH_in"
@@ -636,8 +636,8 @@ resource "azurerm_network_security_group" "infra" {
 resource "azurerm_virtual_machine" "apps" {
     name                  = "app-${count.index + 1}"
     count                 = "${var.app_count}"
-    location              = "${azurerm_resource_group.rg.location}"
-    resource_group_name   = "${azurerm_resource_group.rg.name}"
+    location              = "${data.azurerm_resource_group.rg.location}"
+    resource_group_name   = "${data.azurerm_resource_group.rg.name}"
     network_interface_ids = ["${element(azurerm_network_interface.app.*.id, count.index)}"]
     availability_set_id   = "${azurerm_availability_set.app.id}"
     vm_size               = "${var.azure_instance_app}"
@@ -689,7 +689,7 @@ resource "azurerm_virtual_machine" "apps" {
     }
 
     tags {
-        ResourceGroup = "${azurerm_resource_group.rg.name}"
+        ResourceGroup = "${data.azurerm_resource_group.rg.name}"
         Name          = "app-${count.index + 1}"
         Role          = "app"
     }
@@ -697,16 +697,16 @@ resource "azurerm_virtual_machine" "apps" {
 
 resource "azurerm_availability_set" "app" {
     name                = "app"
-    location            = "${azurerm_resource_group.rg.location}"
-    resource_group_name = "${azurerm_resource_group.rg.name}"
+    location            = "${data.azurerm_resource_group.rg.location}"
+    resource_group_name = "${data.azurerm_resource_group.rg.name}"
     managed             = true
 }
 
 resource "azurerm_network_interface" "app" {
    name                      = "app-${count.index + 1}"
    count                     = "${var.app_count}"
-   location                  = "${azurerm_resource_group.rg.location}"
-   resource_group_name       = "${azurerm_resource_group.rg.name}"
+   location                  = "${data.azurerm_resource_group.rg.location}"
+   resource_group_name       = "${data.azurerm_resource_group.rg.name}"
    network_security_group_id = "${azurerm_network_security_group.node.id}"
 
    ip_configuration {
@@ -718,7 +718,7 @@ resource "azurerm_network_interface" "app" {
 
 resource "azurerm_subnet" "app" {
     name                      = "app"
-    resource_group_name       = "${azurerm_resource_group.rg.name}"
+    resource_group_name       = "${data.azurerm_resource_group.rg.name}"
     virtual_network_name      = "${azurerm_virtual_network.vnet.name}"
     network_security_group_id = "${azurerm_network_security_group.node.id}"
     address_prefix            = "10.30.0.0/16"
@@ -727,8 +727,8 @@ resource "azurerm_subnet" "app" {
 
 resource "azurerm_network_security_group" "node" {
   name                = "node"
-  location            = "${azurerm_resource_group.rg.location}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
+  location            = "${data.azurerm_resource_group.rg.location}"
+  resource_group_name = "${data.azurerm_resource_group.rg.name}"
 
   security_rule {
     name                       = "allowSSH_in"
@@ -830,7 +830,7 @@ resource "azurerm_network_security_group" "node" {
 
 resource "azurerm_traffic_manager_profile" "api-external" {
   name                   = "api-external"
-  resource_group_name    = "${azurerm_resource_group.rg.name}"
+  resource_group_name    = "${data.azurerm_resource_group.rg.name}"
   traffic_routing_method = "Weighted"
 
   dns_config {
@@ -848,7 +848,7 @@ resource "azurerm_traffic_manager_profile" "api-external" {
 resource "azurerm_traffic_manager_endpoint" "api-endpoint" {
   count               = "${var.master_count}"
   name                = "master-${count.index + 1}-${random_string.suffix.result}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
+  resource_group_name = "${data.azurerm_resource_group.rg.name}"
   profile_name        = "${azurerm_traffic_manager_profile.api-external.name}"
   target_resource_id  = "${element(azurerm_public_ip.master.*.id, count.index)}"
   type                = "azureEndpoints"
@@ -862,7 +862,7 @@ resource "azurerm_traffic_manager_endpoint" "api-endpoint" {
 
 resource "azurerm_traffic_manager_profile" "infra" {
   name                   = "infra"
-  resource_group_name    = "${azurerm_resource_group.rg.name}"
+  resource_group_name    = "${data.azurerm_resource_group.rg.name}"
   traffic_routing_method = "Weighted"
 
   dns_config {
@@ -880,7 +880,7 @@ resource "azurerm_traffic_manager_profile" "infra" {
 resource "azurerm_traffic_manager_endpoint" "infra-endpoint" {
   count               = "${var.infra_count}"
   name                = "infra-${count.index + 1 }-${random_string.suffix.result}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
+  resource_group_name = "${data.azurerm_resource_group.rg.name}"
   profile_name        = "${azurerm_traffic_manager_profile.infra.name}"
   target_resource_id  = "${element(azurerm_public_ip.infra.*.id, count.index)}"
   type                = "azureEndpoints"
@@ -893,13 +893,13 @@ resource "azurerm_traffic_manager_endpoint" "infra-endpoint" {
 
 resource "azurerm_dns_zone" "apps" {
   name                = "${var.apps_zone}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
+  resource_group_name = "${data.azurerm_resource_group.rg.name}"
 }
 
 resource "azurerm_dns_cname_record" "infra-apps-cname" {
   name                = "infra"
   zone_name           = "${azurerm_dns_zone.apps.name}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
+  resource_group_name = "${data.azurerm_resource_group.rg.name}"
   ttl                 = 300
   record              = "${azurerm_traffic_manager_profile.infra.fqdn}"
 }
@@ -907,7 +907,7 @@ resource "azurerm_dns_cname_record" "infra-apps-cname" {
 resource "azurerm_dns_cname_record" "infra-apps-wildcard" {
   name                = "*"
   zone_name           = "${azurerm_dns_zone.apps.name}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
+  resource_group_name = "${data.azurerm_resource_group.rg.name}"
   ttl                 = 300
   record              = "${azurerm_traffic_manager_profile.infra.fqdn}"
 }
@@ -918,13 +918,13 @@ resource "azurerm_dns_cname_record" "infra-apps-wildcard" {
 
 resource "azurerm_dns_zone" "cluster" {
   name                = "${var.cluster_zone}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
+  resource_group_name = "${data.azurerm_resource_group.rg.name}"
 }
 
 resource "azurerm_dns_a_record" "bastion-A" {
   name                = "bastion"
   zone_name           = "${azurerm_dns_zone.cluster.name}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
+  resource_group_name = "${data.azurerm_resource_group.rg.name}"
   ttl                 = 300
   records             = ["${azurerm_public_ip.bastion.ip_address}"]
   depends_on          = ["azurerm_virtual_machine.bastion"]
@@ -933,7 +933,7 @@ resource "azurerm_dns_a_record" "bastion-A" {
 resource "azurerm_dns_cname_record" "api-CNAME" {
   name                = "api"
   zone_name           = "${azurerm_dns_zone.cluster.name}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
+  resource_group_name = "${data.azurerm_resource_group.rg.name}"
   ttl                 = 300
   record              = "${azurerm_traffic_manager_profile.api-external.fqdn}"
 }
@@ -941,7 +941,7 @@ resource "azurerm_dns_cname_record" "api-CNAME" {
 resource "azurerm_dns_cname_record" "portal-CNAME" {
   name                = "portal"
   zone_name           = "${azurerm_dns_zone.cluster.name}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
+  resource_group_name = "${data.azurerm_resource_group.rg.name}"
   ttl                 = 300
   record              = "${azurerm_traffic_manager_profile.api-external.fqdn}"
 }
@@ -949,7 +949,7 @@ resource "azurerm_dns_cname_record" "portal-CNAME" {
 resource "azurerm_dns_cname_record" "gapi-CNAME" {
   name                = "gapi"
   zone_name           = "${azurerm_dns_zone.cluster.name}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
+  resource_group_name = "${data.azurerm_resource_group.rg.name}"
   ttl                 = 300
   record              = "${azurerm_traffic_manager_profile.api-external.fqdn}"
 }
@@ -957,7 +957,7 @@ resource "azurerm_dns_cname_record" "gapi-CNAME" {
 resource "azurerm_dns_cname_record" "usage-CNAME" {
   name                = "usage"
   zone_name           = "${azurerm_dns_zone.cluster.name}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
+  resource_group_name = "${data.azurerm_resource_group.rg.name}"
   ttl                 = 300
   record              = "${azurerm_traffic_manager_profile.api-external.fqdn}"
 }
@@ -969,15 +969,15 @@ resource "azurerm_dns_cname_record" "usage-CNAME" {
 
 resource "azurerm_storage_account" "registry" {
   name                  = "registry${random_string.suffix.result}"
-  location              = "${azurerm_resource_group.rg.location}"
-  resource_group_name   = "${azurerm_resource_group.rg.name}"
+  location              = "${data.azurerm_resource_group.rg.location}"
+  resource_group_name   = "${data.azurerm_resource_group.rg.name}"
   account_tier             = "Standard"
   account_replication_type = "LRS"
 }
 
 resource "azurerm_storage_container" "registry" {
   name                  = "registry"
-  resource_group_name   = "${azurerm_resource_group.rg.name}"
+  resource_group_name   = "${data.azurerm_resource_group.rg.name}"
   storage_account_name  = "${azurerm_storage_account.registry.name}"
   container_access_type = "private"
 }
@@ -985,7 +985,7 @@ resource "azurerm_storage_container" "registry" {
 resource "azurerm_storage_blob" "registry" {
   name = "registry"
 
-  resource_group_name   = "${azurerm_resource_group.rg.name}"
+  resource_group_name   = "${data.azurerm_resource_group.rg.name}"
   storage_account_name   = "${azurerm_storage_account.registry.name}"
   storage_container_name = "${azurerm_storage_container.registry.name}"
 

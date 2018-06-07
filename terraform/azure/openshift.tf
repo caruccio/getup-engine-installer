@@ -264,6 +264,10 @@ resource "azurerm_virtual_machine" "masters" {
     delete_os_disk_on_termination       = true
     delete_data_disks_on_termination    = false
 
+    lifecycle {
+        ignore_changes = [ "storage_data_disk", "tags" ]
+    }
+
     storage_image_reference {
         id = "${data.azurerm_image.node.id}"
     }
@@ -467,6 +471,10 @@ resource "azurerm_virtual_machine" "infras" {
     delete_os_disk_on_termination       = true
     delete_data_disks_on_termination    = false
 
+    lifecycle {
+        ignore_changes = [ "storage_data_disk", "tags" ]
+    }
+
     storage_image_reference {
         id = "${data.azurerm_image.node.id}"
     }
@@ -643,6 +651,10 @@ resource "azurerm_virtual_machine" "apps" {
 
     delete_os_disk_on_termination       = true
     delete_data_disks_on_termination    = false
+
+    lifecycle {
+        ignore_changes = [ "storage_data_disk", "tags" ]
+    }
 
     storage_image_reference {
         id = "${data.azurerm_image.node.id}"

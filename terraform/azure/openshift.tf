@@ -265,7 +265,7 @@ resource "azurerm_virtual_machine" "masters" {
     delete_data_disks_on_termination    = true
 
     lifecycle {
-        ignore_changes = [ "storage_data_disk.kubernetes-*", "tags" ]
+        ignore_changes = [ "storage_data_disk.kubernetes", "tags" ]
     }
 
     storage_image_reference {
@@ -472,7 +472,7 @@ resource "azurerm_virtual_machine" "infras" {
     delete_data_disks_on_termination    = true
 
     lifecycle {
-        ignore_changes = [ "storage_data_disk.kubernetes-*", "tags" ]
+        ignore_changes = [ "storage_data_disk.kubernetes", "tags" ]
     }
 
     storage_image_reference {
@@ -653,7 +653,7 @@ resource "azurerm_virtual_machine" "apps" {
     delete_data_disks_on_termination    = true
 
     lifecycle {
-        ignore_changes = [ "storage_data_disk.kubernetes-*", "tags" ]
+        ignore_changes = [ "storage_data_disk.kubernetes", "tags" ]
     }
 
     storage_image_reference {

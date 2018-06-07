@@ -262,10 +262,10 @@ resource "azurerm_virtual_machine" "masters" {
     vm_size               = "${var.azure_instance_master}"
 
     delete_os_disk_on_termination       = true
-    delete_data_disks_on_termination    = false
+    delete_data_disks_on_termination    = true
 
     lifecycle {
-        ignore_changes = [ "storage_data_disk", "tags" ]
+        ignore_changes = [ "storage_data_disk.kubernetes-*", "tags" ]
     }
 
     storage_image_reference {
@@ -273,10 +273,10 @@ resource "azurerm_virtual_machine" "masters" {
     }
 
     storage_os_disk {
-        name                = "master-osdisk-${count.index + 1}-${random_string.suffix.result}"
-        caching             = "ReadWrite"
-        create_option       = "FromImage"
-        managed_disk_type   = "Standard_LRS"
+        name              = "master-osdisk-${count.index + 1}-${random_string.suffix.result}"
+        caching           = "ReadWrite"
+        create_option     = "FromImage"
+        managed_disk_type = "Standard_LRS"
     }
 
     storage_data_disk {
@@ -469,10 +469,10 @@ resource "azurerm_virtual_machine" "infras" {
     vm_size               = "${var.azure_instance_infra}"
 
     delete_os_disk_on_termination       = true
-    delete_data_disks_on_termination    = false
+    delete_data_disks_on_termination    = true
 
     lifecycle {
-        ignore_changes = [ "storage_data_disk", "tags" ]
+        ignore_changes = [ "storage_data_disk.kubernetes-*", "tags" ]
     }
 
     storage_image_reference {
@@ -650,10 +650,10 @@ resource "azurerm_virtual_machine" "apps" {
     vm_size               = "${var.azure_instance_app}"
 
     delete_os_disk_on_termination       = true
-    delete_data_disks_on_termination    = false
+    delete_data_disks_on_termination    = true
 
     lifecycle {
-        ignore_changes = [ "storage_data_disk", "tags" ]
+        ignore_changes = [ "storage_data_disk.kubernetes-*", "tags" ]
     }
 
     storage_image_reference {

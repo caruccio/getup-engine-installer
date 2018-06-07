@@ -26,6 +26,7 @@
     namespace: "{{ getupcloud_namespace }}"
     service_name: console
     host: "{{ getupcloud_portal_endpoint }}"
+    tls_termination: edge
     cacert_path: "/etc/origin/master/named_certificates/ca-{{ getupcloud_cluster_zone }}.crt"
     cert_path: "/etc/origin/master/named_certificates/{{ getupcloud_cluster_zone }}.crt"
     key_path: "/etc/origin/master/named_certificates/{{ getupcloud_cluster_zone }}.key"

@@ -114,6 +114,8 @@ cd $ROOT_DIR
 gen_hosts
 
 if stage_is playbook; then
+    # first arg is a path to playbook
+    ansible_args[0]=$(realpath $OLDPWD/${ansible_args[0]})
     ansible-playbook -i $HOSTS_FILE ${ansible_args[*]}
 fi
 

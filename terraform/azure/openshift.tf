@@ -151,9 +151,9 @@ data "azurerm_image" "node" {
 locals {
     cluster_zone_nodot = "${replace(var.cluster_zone, ".", "-")}"
     resource_group_dns = "${replace(var.azure_resource_group, "_", "-")}"
-    portal_endpoint = "portal.${var.cluster_zone}"
-    gapi_endpoint = "gapi.${var.cluster_zone}"
-    usage_endpoint = "usage.${var.cluster_zone}"
+    portal_endpoint = "portal.${var.apps_zone}"
+    gapi_endpoint = "gapi.${var.apps_zone}"
+    usage_endpoint = "usage.${var.apps_zone}"
     bastion_endpoint = "bastion.${var.cluster_zone}"
 }
 
@@ -942,7 +942,7 @@ resource "azurerm_dns_cname_record" "portal-CNAME" {
   zone_name           = "${azurerm_dns_zone.cluster.name}"
   resource_group_name = "${data.azurerm_resource_group.rg.name}"
   ttl                 = 300
-  record              = "${azurerm_traffic_manager_profile.api-external.fqdn}"
+  record              = "${azurerm_traffic_manager_profile.infra.fqdn}"
 }
 
 resource "azurerm_dns_cname_record" "gapi-CNAME" {
@@ -950,7 +950,7 @@ resource "azurerm_dns_cname_record" "gapi-CNAME" {
   zone_name           = "${azurerm_dns_zone.cluster.name}"
   resource_group_name = "${data.azurerm_resource_group.rg.name}"
   ttl                 = 300
-  record              = "${azurerm_traffic_manager_profile.api-external.fqdn}"
+  record              = "${azurerm_traffic_manager_profile.infra.fqdn}"
 }
 
 resource "azurerm_dns_cname_record" "usage-CNAME" {
@@ -958,7 +958,7 @@ resource "azurerm_dns_cname_record" "usage-CNAME" {
   zone_name           = "${azurerm_dns_zone.cluster.name}"
   resource_group_name = "${data.azurerm_resource_group.rg.name}"
   ttl                 = 300
-  record              = "${azurerm_traffic_manager_profile.api-external.fqdn}"
+  record              = "${azurerm_traffic_manager_profile.infra.fqdn}"
 }
 
 

@@ -151,9 +151,9 @@ data "azurerm_image" "node" {
 locals {
     cluster_zone_nodot = "${replace(var.cluster_zone, ".", "-")}"
     resource_group_dns = "${replace(var.azure_resource_group, "_", "-")}"
-    portal_endpoint = "portal.${var.apps_zone}"
-    gapi_endpoint = "gapi.${var.apps_zone}"
-    usage_endpoint = "usage.${var.apps_zone}"
+    portal_endpoint = "portal.${var.cluster_zone}"
+    gapi_endpoint = "gapi.${var.cluster_zone}"
+    usage_endpoint = "usage.${var.cluster_zone}"
     bastion_endpoint = "bastion.${var.cluster_zone}"
 }
 
@@ -265,7 +265,7 @@ resource "azurerm_virtual_machine" "masters" {
     delete_data_disks_on_termination    = true
 
     lifecycle {
-        ignore_changes = [ "storage_data_disk.kubernetes", "tags" ]
+        ignore_changes = [ "storage_data_disk", "tags" ]
     }
 
     storage_image_reference {
@@ -472,7 +472,7 @@ resource "azurerm_virtual_machine" "infras" {
     delete_data_disks_on_termination    = true
 
     lifecycle {
-        ignore_changes = [ "storage_data_disk.kubernetes", "tags" ]
+        ignore_changes = [ "storage_data_disk", "tags" ]
     }
 
     storage_image_reference {
@@ -653,7 +653,7 @@ resource "azurerm_virtual_machine" "apps" {
     delete_data_disks_on_termination    = true
 
     lifecycle {
-        ignore_changes = [ "storage_data_disk.kubernetes", "tags" ]
+        ignore_changes = [ "storage_data_disk", "tags" ]
     }
 
     storage_image_reference {

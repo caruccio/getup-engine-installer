@@ -57,7 +57,7 @@
     user_hostname: "{{ getupcloud_gapi_endpoint }}"
     enable_module_billing: "{{ getupcloud_console_enable_module_billing | to_json }}"
     enable_module_prices: "{{ getupcloud_console_enable_module_prices | to_json }}"
-    urls: "{{ lookup('file', getupcloud_console_urls_path) }}"
+    urls: "{{ lookup('file', getupcloud_console_urls_path) | to_json }}"
 
 - name: Create console config
   oc_configmap:

@@ -11,22 +11,26 @@ Supported versions are based on [Openshift Origin](https://github.com/openshift/
 
 The full install process comprises the following steps:
 
-1. Preparing the environment
-    - Generate installer container images
-    - Create cluster config
-    - Start installer container
+1. [Preparing the environment](#1-preparing-the-environment)
+    - [Generate installer container images](#generate-installer-container-images)
+    - [Create cluster config](#create-cluster-config)
+    - [Copy Getup Engine private keys](#copy-getup-engine-private-keys)
+    - [Start installer container](#start-installer-container)
 
-2. Deploying the infrastructure
-    - Create Base Image (packer or terraform)
-    - Generate Lets Encrypt SSL certificates (optional)
-    - Create the infrastructure (terraform)
 
-3. Installing the cluster
-    - Install and provision the cluster (ansible)
+2. [Deploying the infrastructure](#2-deploying-the-infrastructure)
+    - [Create Base Image](#create-base-image-packer-or-terraform) (packer or terraform)
+    - [SSL certificates](#ssl-certificates) (optional)
+    - [Create the infrastructure](#create-the-infrastructure-terraform) (terraform)
 
-4. Upgrade the cluster (ansible)
-    - Control plan
-    - Application nodes
+
+3. [Installing the cluster](#3-installing-the-cluster)
+    - [Install and provision the cluster](#install-the-cluster-ansible) (ansible)
+
+
+4. [Upgrade the cluster](#4-upgrade-the-cluster-ansible) (ansible)
+    - [Control plain](#control-plan)
+    - [Application nodes](#application-nodes)
 
 ## 1. Preparing the environment
 
@@ -73,15 +77,15 @@ $ mkdir -p state/$CLUSTER_NAME
 It's a good practice to create the folder with the same name of the cluster. Prefer short and simple names (i.e. [a-z0-9]).
 This folder should persist during cluster lifecycle.
 
-Use the script `bin/gen-config [cluster-name] <output-file>` to create the configuration file used as input by the installer.
-This file **must be named** `getupengine.env` because the installer expects it.
+Use the script `bin/gen-config [cluster-name]` to create the configuration file used as input by the installer.
+This will create the file `./state/$CLUSTER_NAME/getupengine.env`. The installer expects to find it there.
 
 ```
 $ bin/gen-config $CLUSTER_NAME
 ```
 **Note the name of the cluster is `mateus`, which is also the name of the directory for the state dir.**
 
-To use anothe state dir, provide a valid full path:
+To use another state dir, provide a valid full path:
 
 ```
 $ bin/gen-config /another/state-dir/$CLUSTER_NAME
@@ -106,6 +110,12 @@ $ cp ~/.ssh/id_rsa state/$CLUSTER_NAME/
 
 > Make sure this key is added to the provider.
 > This is required for AWS and GCE.
+
+For AWS, upload the key you created in the previous step like so:
+```
+aws ec2 import-key-pair --key-name default --public-key-material file://./state/$CLUSTER_NAME/id_rsa.pub
+```
+
 > On Azure, the keys are loaded during host instantiation.
 
 ### Copy Getup Engine private keys
@@ -163,7 +173,7 @@ Execute the command `/getup-engine/images/deploy` and wait it finishes.
 
 ### SSL Certificates
 
-The custer serves public certificates to clients reaching it's domains (cluster and apps) using wildcard certificates for each zone.
+The cluster serves public certificates to clients reaching its domains (cluster and apps) using wildcard certificates for each zone.
 
 You can provide your own certificates or generate free certificates from Let's Encrypt.
 
@@ -187,6 +197,7 @@ For example, if your `Cluster zone` is `bussiness.com` and your `Apps zone` is `
 #### Lets Encrypt SSL certificates (optional)
 
 In order to generate Lets Encrypt certificates, execute the command `gen-certificates`.
+
 All required files will be created in the right place.
 
 Please keep in mind these certificates last on for 3 months. It's on you to renew the certificates and update the
@@ -200,7 +211,7 @@ Execute the script `/getup-engine/terraform/deploy` and confirm. Use the flag `-
 
 At this point any infra requirement should be provisioned. From networking to computing instances.
 
-Both zones will be created and populated as necessary. The following dns entries sould be created:
+Both zones will be created and populated as necessary. The following dns entries should be created:
 
 **Cluster zone**
 

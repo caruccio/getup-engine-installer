@@ -51,9 +51,14 @@ eval cluster_zone=$(awk -F= '/^CLUSTER_ZONE=/{print $2}' ${state_dir}/getupengin
 search=$(grep search /etc/resolv.conf | cut -f2- -d' ')
 
 # setup permissions
-sudo chcon -R -t svirt_sandbox_file_t ${state_dir}
-sudo chown 1000 -R ${state_dir}
-sudo chgrp $(id -g) -R ${state_dir}
+if [ $(command -v chcon) ]; then
+    sudo chcon -R -t svirt_sandbox_file_t ${state_dir}
+fi
+if [ $(id -u 1000 2> /dev/null ) ]; then
+    sudo chown 1000 -R ${state_dir}
+fi
+
+sudo chgrp -R $(id -g) ${state_dir}
 
 echo "---> Starting container ${container_name} from image $image"
 sudo docker run -it --rm $@ \

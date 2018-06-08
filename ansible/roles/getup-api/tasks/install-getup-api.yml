@@ -116,6 +116,9 @@
       AWS_SECRET_ACCESS_KEY: "{{ getupcloud_api_aws_secret_access_key }}"
       AWS_STORAGE_BUCKET_NAME: "{{ getupcloud_api_aws_storage_bucket_name }}"
       AWS_LOCATION: "{{ getupcloud_api_aws_location }}"
+      VENDOR_NAME: "{{ getupcloud_vendor_name }}"
+      VENDOR_TITLE: "{{ getupcloud_vendor_title }}"
+      VENDOR_NAMESPACE: "{{ getupcloud_vendor_namespace }}"
   when:
     - not has_getup_api_deploy
     - getupcloud_database_mode == 'hosted'
@@ -147,6 +150,9 @@
       DATABASE_PASSWORD: "{{ getupcloud_database_managed_password }}"
       DATABASE_NAME_API: "{{ getupcloud_database_managed_api_name }}"
       DATABASE_NAME_USAGE: "{{ getupcloud_database_managed_usage_name }}"
+      VENDOR_NAME: "{{ getupcloud_vendor_name }}"
+      VENDOR_TITLE: "{{ getupcloud_vendor_title }}"
+      VENDOR_NAMESPACE: "{{ getupcloud_vendor_namespace }}"
   when:
     - not has_getup_api_deploy
     - getupcloud_database_mode == 'managed'

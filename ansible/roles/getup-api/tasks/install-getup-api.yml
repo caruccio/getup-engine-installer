@@ -23,14 +23,14 @@
 - name: Check API already exists
   command: >
     {{ oc }}
-    get dc/api
+    get buildconfig/api
     -n {{ getupcloud_namespace }}
     -o name
     --ignore-not-found
   register: oc_api
 
 - set_fact:
-    has_getup_api_deploy: "{{ oc_api.stdout_lines | length | bool }}"
+    has_getup_api_buildconfig: "{{ oc_api.stdout_lines | length | bool }}"
 
 - name: Create temp directory
   command: mktemp -d /tmp/getupcloud-api-XXXXXX
@@ -56,16 +56,16 @@
 - debug:
     msg: "Cloned getup-api to {{ repo_dir.stdout }}/getup-api"
 
-#- name: Delete getup-api templates
-#  oc_obj:
-#    state: absent
-#    kind: Template
-#    namespace: "{{ getupcloud_namespace }}"
-#    selector: "{{ getupcloud_api_template_selector }}"
-
 - name: Set getup-api template name
   set_fact:
     template_name: "{{ getupcloud_api_template_name_prefix }}-{{ getupcloud_database_mode }}"
+
+- name: Delete getup-api templates
+  oc_obj:
+    state: absent
+    kind: Template
+    namespace: "{{ getupcloud_namespace }}"
+    name: "{{ template_name }}"
 
 - name: Create getup-api template
   oc_obj:
@@ -102,7 +102,7 @@
       VENDOR_TITLE: "{{ getupcloud_vendor_title }}"
       VENDOR_NAMESPACE: "{{ getupcloud_vendor_namespace }}"
   when:
-    - not has_getup_api_deploy
+    - not has_getup_api_buildconfig
     - getupcloud_database_mode == 'hosted'
 
 - name: Process and execute template
@@ -136,7 +136,7 @@
       VENDOR_TITLE: "{{ getupcloud_vendor_title }}"
       VENDOR_NAMESPACE: "{{ getupcloud_vendor_namespace }}"
   when:
-    - not has_getup_api_deploy
+    - not has_getup_api_buildconfig
     - getupcloud_database_mode == 'managed'
 
 - name: Reading certificates

@@ -65,6 +65,7 @@
     name: usage-collector
     state: present
     namespace: "{{ getupcloud_namespace }}"
+  when: ansible_host == groups.oo_first_master[0]
 
 - name: Add cluster role to user
   oc_adm_policy_user:
@@ -72,6 +73,7 @@
     resource_kind: cluster-role
     resource_name: cluster-reader
     state: present
+  when: ansible_host == groups.oo_first_master[0]
 
 - name: Create log dir
   file:
@@ -84,6 +86,7 @@
   shell: ./pull-metrics migrate_db
   args:
     chdir: "{{ getupcloud_billing_install_dir }}/collector"
+  when: ansible_host == groups.oo_first_master[0]
 
 - name: Create usage crontab
   cron:

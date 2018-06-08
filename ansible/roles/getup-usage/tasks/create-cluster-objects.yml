@@ -1,0 +1,14 @@
+---
+- name: Create service account
+  oc_serviceaccount:
+    name: usage-collector
+    state: present
+    namespace: "{{ getupcloud_namespace }}"
+
+- name: Add cluster role to user
+  oc_adm_policy_user:
+    user: "system:serviceaccount:{{ getupcloud_namespace }}:usage-collector"
+    resource_kind: cluster-role
+    resource_name: cluster-reader
+    state: present
+

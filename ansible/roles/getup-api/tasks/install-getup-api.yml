@@ -37,15 +37,12 @@
   register: repo_dir
   changed_when: False
   check_mode: no
-  when: not has_getup_api_deploy
 
 - name: Copy deploy key
   copy:
     src: "{{ getupcloud_api_repository_key_file }}"
     dest: "{{ repo_dir.stdout }}/id_rsa"
     mode: 0600
-  when:
-  - not has_getup_api_deploy
 
 - name: Clone getup-api repo
   git:
@@ -55,11 +52,9 @@
     accept_hostkey: yes
     clone: yes
     dest: "{{ repo_dir.stdout }}/getup-api"
-  when: not has_getup_api_deploy
 
 - debug:
     msg: "Cloned getup-api to {{ repo_dir.stdout }}/getup-api"
-  when: not has_getup_api_deploy
 
 #- name: Delete getup-api templates
 #  oc_obj:
@@ -68,17 +63,7 @@
 #    namespace: "{{ getupcloud_namespace }}"
 #    selector: "{{ getupcloud_api_template_selector }}"
 
-- name: Verify installed templates
-  command: >
-    {{ oc }}
-    get template
-    -n {{ getupcloud_namespace }}
-    -l {{ getupcloud_api_template_selector }}
-    -o name
-    --ignore-not-found
-  register: oc_templates
-
-- name: Set getup api managed template name
+- name: Set getup-api template name
   set_fact:
     template_name: "{{ getupcloud_api_template_name_prefix }}-{{ getupcloud_database_mode }}"
 
@@ -90,9 +75,6 @@
     name: "{{ template_name }}"
     files:
       - "{{ repo_dir.stdout }}/getup-api/template-{{ getupcloud_database_mode }}.yaml"
-  when:
-  - not has_getup_api_deploy
-  - template_name not in oc_templates.stdout_lines
 
 - name: Process and execute template
   oc_process:

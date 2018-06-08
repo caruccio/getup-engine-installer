@@ -462,6 +462,11 @@ rd GETUPCLOUD_VENDOR_NAME getup
 rd GETUPCLOUD_VENDOR_TITLE "Getup Cloud"
 rd GETUPCLOUD_VENDOR_NAMESPACE ${GETUPCLOUD_VENDOR_NAME}.io
 rd GETUPCLOUD_ROUTER_EXTERNAL_IPS
+if ask 'Use customized console urls?' n; then
+    cp -fv ansible/roles/getup-console/files/urls.json $stateDir/
+    $EDITOR $stateDir/urls.json
+    ex GETUPCLOUD_CONSOLE_URLS_PATH $stateDir/urls.json
+fi
 
 if ask 'Enable web console billing module?' y; then
     ex GETUPCLOUD_CONSOLE_ENABLE_MODULE_BILLING=true

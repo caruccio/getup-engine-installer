@@ -14,6 +14,45 @@ getupcloud_api_repository: "git@github.com:getupcloud/getup-api.git"
 getupcloud_api_repository_branch: "master"
 getupcloud_api_repository_key_file: "/state/getup-api-id_rsa"
 
+getupcloud_api_django_default_logger: "production"
+kubernetes_service_account_token_file: "/run/secrets/kubernetes.io/serviceaccount/token"
+getupcloud_api_allow_session_authentication: False
+getupcloud_oc_version_number: "3.9.0"
+getupcloud_oc_version_tag: "191fece"
+getupcloud_billing_service_name: "usage"
+getupcloud_billing_service_port: 8080
+getupcloud_api_pagarme_api_key: ""
+getupcloud_api_pagarme_postback_url: "http://requestb.in/18tq4z71"
+getupcloud_api_default_validation_credit: 0
+getupcloud_api_default_tier_offer: "small"
+getupcloud_api_extra_authentication_backend: ""
+getupcloud_api_django_secret_key: "9e4@&tw46$l31)zrqe3wi+-slqm(ruvz&se0^%9#6(_w3ui!c0"
+getupcloud_api_default_max_projects: 2
+getupcloud_api_validated_max_projects: 10
+getupcloud_api_locked_projects_expire_days: 60
+getupcloud_api_enable_prometheus: False
+getupcloud_api_email_backend: 'django.core.mail.backends.console.EmailBackend'
+getupcloud_api_smtp_hostname: 'smtp.mailgun.org'
+getupcloud_api_smtp_username: ""
+getupcloud_api_smtp_password: ""
+getupcloud_api_default_from_email: ""
+getupcloud_api_contact_email: ""
+getupcloud_api_billing_email: ""
+getupcloud_api_database_engine: "sqlite"
+getupcloud_api_database_name:  "database.sqlite3"
+getupcloud_api_database_service_name: "mysql-api"
+getupcloud_api_time_zone: 'UTC'
+getupcloud_api_use_i18n: True
+getupcloud_api_use_l10n: True
+getupcloud_api_use_tz: True
+getupcloud_api_storage_backend: 'django.contrib.staticfiles.storage.StaticFilesStorage'
+getupcloud_slack_username: 'error-bot'
+getupcloud_slack_fail_silently: True
+getupcloud_api_enable_signup: True
+getupcloud_api_validate_account: "signup"
+
+getupcloud_api_trusted_domains: ""
+
 getupcloud_backup_storage_kind: "hosted"
 getupcloud_api_template_name_prefix: "getup-api"
 template_name: ""
@@ -24,7 +63,6 @@ getupcloud_database_managed_password: ""
 getupcloud_database_managed_api_name: ""
 getupcloud_database_managed_usage_name: ""
 
-getupcloud_api_storage_backend: ""
 getupcloud_api_azure_storage_account_name: ""
 getupcloud_api_azure_storage_account_key: ""
 getupcloud_api_azure_storage_container_name: ""
@@ -38,6 +76,7 @@ getupcloud_billing_repository_branch: "master"
 getupcloud_billing_repository_key_file: "/state/getup-billing-id_rsa"
 getupcloud_billing_install_dir: "/usr/share/getup-usage"
 
+getupcloud_console_index: "index.html"
 getupcloud_console_urls_path: "files/urls.json"
 getupcloud_console_enable_module_billing: true
 getupcloud_console_enable_module_prices: false
@@ -48,6 +87,7 @@ getupcloud_observer_template_name: "observer"
 getupcloud_observer_message_frequency: 50
 
 getupcloud_pager_duty_service_key: ""
+getupcloud_slack_token: ""
 getupcloud_slack_operations_webhook: ""
 getupcloud_slack_operations_channel: "#operations"
 
@@ -57,7 +97,6 @@ openshift_prometheus_namespace: "openshift-metrics"
 getupcloud_zabbix_server_port: 10051
 getupcloud_zabbix_host_annotation: "zabbix_host"
 getupcloud_alertmanager_zabbix_webhook_replicas: 2
-
 
 # Grafana
 openshift_grafana_storage_type: 'emptydir'

@@ -17,7 +17,7 @@
     "defaultContainerSize": "small",
     "buildLogLevel":        "0",
     "segmentWriteKey":      null,
-
+    "index":                "{{ index | default('index.html') }}",
 
     "enableModule": {
         "billing":          {{ enable_module_billing | default(false) | to_json }},

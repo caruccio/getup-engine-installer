@@ -2,8 +2,10 @@
 
 set -e
 
-if [ $# -lt 2 ]; then
-    echo "Usage: $0 cluster-name version [docker-run-options...]"
+version=v3.9
+
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 cluster-name [version=$version] [docker-run-options...]"
     exit 0
 fi
 
@@ -17,8 +19,13 @@ shift
 
 name=${state_dir##*/}
 container_name=getup-engine-${name}
-image=getup-engine:${1}
-shift
+
+if [ $# -gt 0 ]; then
+    image=getup-engine:${1}
+    shift
+else
+    image=getup-engine:$version
+fi
 
 if ! [ -d "$state_dir" ]; then
     echo Invalid state dir: $state_dir

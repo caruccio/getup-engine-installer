@@ -1,4 +1,7 @@
 ---
+- include_role:
+    name: getup-namespace
+
 - name: Create temp directory
   command: mktemp -d /tmp/getupcloud-billing-XXXXXX
   register: tmp_dir
@@ -82,6 +85,107 @@
     owner: "{{ ansible_user }}"
     mode: 0750
 
+- name: Create database PVC
+  oc_pvc:
+    state: present
+    namespace: "{{ getupcloud_namespace }}"
+    name: mysql-usage
+    access_modes:
+    - ReadWriteOnce
+    volume_capacity: 100Gi
+  when: ansible_host == groups.oo_first_master[0]
+
+- name: Generate usage database deployment
+  template:
+    src: "templates/mysql.yaml.j2"
+    dest: "mysql.yaml"
+  vars:
+    database_service_name: "{{ getupcloud_usage_database_service_name }}"
+    database_name: "{{ getupcloud_usage_database_name }}"
+    database_username: "{{ getupcloud_usage_database_user }}"
+    database_password: "{{ getupcloud_usage_database_password }}"
+  when: ansible_host == groups.oo_first_master[0]
+
+- name: Create usage database deployment
+  oc_obj:
+    state: present
+    namespace: "{{ getupcloud_namespace }}"
+    kind: deploymentconfig
+    name: mysql-usage
+    files:
+      - "mysql.yaml"
+    delete_after: yes
+  when: ansible_host == groups.oo_first_master[0]
+
+- name: Create Database service
+  oc_service:
+    namespace: "{{ getupcloud_namespace }}"
+    name: mysql-usage
+    ports:
+    - name: 3306-tcp
+      port: 3306
+      protocol: TCP
+      targetPort: 3306
+    selector:
+      app: mysql-usage
+    session_affinity: None
+    service_type: ClusterIP
+  when: ansible_host == groups.oo_first_master[0]
+
+- name: Wait for database to become ready
+  wait_for:
+    host: "mysql-usage.{{ getupcloud_namespace }}.svc"
+    port: 3306
+    delay: 2
+    sleep: 2
+    state: present
+  when: ansible_host == groups.oo_first_master[0]
+
+## Usage API
+
+- block:
+  - name: Generate Usage API deployment
+    template:
+      src: "templates/usage.yaml.j2"
+      dest: "usage.yaml"
+    when: ansible_host == groups.oo_first_master[0]
+
+  - name: Create Usage API deployment
+    oc_obj:
+      state: present
+      namespace: "{{ getupcloud_namespace }}"
+      kind: deploymentconfig
+      name: usage
+      files:
+        - "usage.yaml"
+      delete_after: yes
+
+  - name: Create Usage API service
+    oc_service:
+      namespace: "{{ getupcloud_namespace }}"
+      name: usage
+      ports:
+      - name: 8080-tcp
+        port: 8080
+        protocol: TCP
+        targetPort: 8080
+      selector:
+        app: usage
+      session_affinity: None
+      service_type: ClusterIP
+
+  - name: Wait for Usage API to become available
+    wait_for:
+      host: "usage.{{ getupcloud_namespace }}.svc"
+      port: 8080
+      delay: 2
+      sleep: 2
+      timeout: 1200
+      state: present
+  when: ansible_host == groups.oo_first_master[0]
+
+## Migrate DB and start collecting
+
 - name: Migrate usage database
   shell: ./pull-metrics migrate_db
   args:
@@ -109,3 +213,15 @@
       BILLING_NAMESPACE={{ getupcloud_namespace }}
       SERVICE_ACCOUNT_NAME=usage-collector
       {{ getupcloud_billing_install_dir }}/collector/make-partials > /var/log/getup-billing/make-partials.log
+
+- name: Create invoice crontab
+  cron:
+    name: "Generate invoices"
+    user: "{{ ansible_user }}"
+    minute: 30
+    hour: 0
+    day: 1
+    job: >
+      BILLING_NAMESPACE={{ getupcloud_namespace }}
+      {{ getupcloud_billing_install_dir }}/collector/make-invoices > /var/log/getup-billing/make-invoices.log
+

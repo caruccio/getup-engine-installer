@@ -5,7 +5,7 @@ metadata:
     app: console
   name: console
 spec:
-  replicas: 2
+  replicas: {{ infra_count | default(1) }}
   selector:
     app: console
   strategy:

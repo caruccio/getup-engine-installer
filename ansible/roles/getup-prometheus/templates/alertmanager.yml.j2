@@ -70,7 +70,7 @@ receivers:
 - name: slack_operations
   slack_configs:
   - send_resolved: true
-    api_url: {{ slack_operations_api_url }}
+    api_url: {{ slack_operations_webhook }}
     channel: {{ slack_operations_channel }}
 {% raw %}
     text: >-

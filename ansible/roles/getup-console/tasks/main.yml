@@ -30,8 +30,6 @@
     cacert_path: "/etc/origin/master/named_certificates/ca-{{ getupcloud_cluster_zone }}.crt"
     cert_path: "/etc/origin/master/named_certificates/{{ getupcloud_cluster_zone }}.crt"
     key_path: "/etc/origin/master/named_certificates/{{ getupcloud_cluster_zone }}.key"
-  with_items:
-    - { name: "portal", host: "{{ getupcloud_portal_endpoint }}" }
 
 - name: Update route
   oc_edit:
@@ -52,12 +50,13 @@
     vendor_title: "{{ getupcloud_vendor_title }}"
     vendor_namespace: "{{ getupcloud_vendor_namespace }}"
     router_external_ips: "{{ getupcloud_console_router_external_ips.split() | default([]) }}"
-    api_hostname: "{{ getupcloud_api_endpoint }}"
+    api_hostname: "{{ kubernetes_api_endpoint }}"
     hawkular_hostname: "{{ openshift_metrics_hawkular_hostname }}"
-    user_hostname: "{{ getupcloud_gapi_endpoint }}"
+    user_hostname: "{{ getupcloud_api_endpoint }}"
     enable_module_billing: "{{ getupcloud_console_enable_module_billing }}"
     enable_module_prices: "{{ getupcloud_console_enable_module_prices  }}"
     urls: "{{ lookup('file', getupcloud_console_urls_path) }}"
+    index: "{{ getupcloud_console_index }}"
 
 - name: Create console config
   oc_configmap:

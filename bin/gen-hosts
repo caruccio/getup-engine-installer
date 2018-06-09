@@ -124,6 +124,10 @@ if [ -f "${GETUPCLOUD_CONSOLE_URLS_PATH}" ]; then
     echo getupcloud_console_urls_path=${GETUPCLOUD_CONSOLE_URLS_PATH}
 fi
 
+if [ -n "${GETUPCLOUD_CONSOLE_INDEX}" ]; then
+    echo getupcloud_console_index=${GETUPCLOUD_CONSOLE_INDEX}
+fi
+
 # extra configs
 if [ -r "${hosts_extra_in}" ]; then
     echo "# $hosts_extra_in"
@@ -149,10 +153,7 @@ function server_name()
     local privateName=$1
 
     if [ $PROVIDER == aws ]; then
-        aws ec2 describe-instances \
-            --filters Name=network-interface.private-dns-name,Values=$privateName \
-            --query "Reservations[*].Instances[*].Tags[?Key == 'Name'].Value | [] | []" \
-            --output text || echo ${privateName%%.*}
+        /getup-engine/bin/get-instance-tag $privateName Name || echo ${privateName%%.*}
 
     #elif [ $PROVIDER == azure ]; then
     #elif [ $PROVIDER == azure ]; then

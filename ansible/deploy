@@ -114,9 +114,29 @@ cd $ROOT_DIR
 gen_hosts
 
 if stage_is playbook; then
-    # first arg is a path to playbook
-    ansible_args[0]=$(realpath $OLDPWD/${ansible_args[0]})
-    ansible-playbook -i $HOSTS_FILE ${ansible_args[*]}
+    # first arg is the path to playbook or playbook name from /getup-engine/ansible/playbooks/ or /openshift-ansible/playbooks/
+    playbook_name=${ansible_args[0]}
+    unset ansible_args[0]
+
+    if [ "${playbook_name:0:1}" != '/' ]; then
+        playbook_path=$(realpath $OLDPWD/${playbook_name})
+
+        for playbook_dirs in $OLDPWD/ansible/playbooks /openshift-ansible/playbooks; do
+            playbook_basename=$playbook_dirs/${playbook_name}/config
+            if [ -e $playbook_basename.yaml ]; then
+                playbook_path=$(realpath $playbook_basename.yaml)
+                break
+            elif [ -e $playbook_basename.yml ]; then
+                playbook_path=$(realpath $playbook_basename.yml)
+                break
+            fi
+        done
+    else
+        playbook_path=$(realpath $OLDPWD/${playbook_name})
+    fi
+
+    echo Starting playbook: $playbook_path
+    ansible-playbook -i $HOSTS_FILE $playbook_path ${ansible_args[*]}
 fi
 
 if stage_is upgrade-control-plane || stage_is upgrade-nodes; then
@@ -228,22 +248,30 @@ cat <<EOF
 ## Installation Summary
 #########################################################################
 
--- Endpoints ------------
+-- Main Endpoints ------------
 
-    Portal:           https://$PORTAL_ENDPOINT
-    Rest API:         https://$API_ENDPOINT
-    Apps CNAME:       $INFRA_ENDPOINT
-    Bastion host:     $BASTION_ENDPOINT
-    Master hosts:     $MASTER_HOSTNAMES
+          Portal: https://$PORTAL_ENDPOINT -- web portal
+        Rest API: https://$API_ENDPOINT -- kubernetes/openshift API
+      Apps CNAME: $INFRA_ENDPOINT -- point here your app's custom domain
 
--- Admin Info -----------
+ Getup Cloud API: https://gapi.${CLUSTER_ZONE}/api/
+    Django admin: https://gapi.${CLUSTER_ZONE}/admin/
+     User signup: https://gapi.${CLUSTER_ZONE}/manager/add-user/
 
-    Admin username:         ${GETUPCLOUD_API_ADMIN_USERNAME}
-    Impersonate username:   ${GETUPCLOUD_API_IMPERSONATE_USERNAME}
+    Bastion host: $BASTION_ENDPOINT -- use to jump-access cluster hosts
+    Master hosts: $MASTER_HOSTNAMES -- manage the cluster from one of those
 
-    User manager:           https://gapi.${CLUSTER_ZONE}/manager/add-user/
+-- Admin Info ---------------
 
--- Client Tool ----------
+          Admin credentials: ${GETUPCLOUD_API_ADMIN_USERNAME} / ${GETUPCLOUD_API_ADMIN_PASSWORD}
+    Impersonate credentials: ${GETUPCLOUD_API_IMPERSONATE_USERNAME} / ${GETUPCLOUD_API_IMPERSONATE_PASSWORD}
+
+-- Monitoring ----------------
+
+    Prometheus: https://prometheus.${CLUSTER_ZONE}
+       Grafana: https://grafana.${CLUSTER_ZONE}
+
+-- CommandLine Client Tool ----------
 
     $ curl -L https://gapi.${CLUSTER_ZONE}/install > oc-installer.sh && sh oc-installer.sh
 

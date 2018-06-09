@@ -31,3 +31,12 @@
 
   tags:
     - post-install
+
+- name: Ensure read-only mode for .kube/config
+  file:
+    mode: 0644
+    owner: root
+    group: root
+    path: "/home/{{ ansible_user }}/.kube/config"
+  tags:
+  - post-install

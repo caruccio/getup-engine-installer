@@ -76,6 +76,11 @@ variable "user_public_key_file" {
   description = "SSH Public key content (not file)"
 }
 
+variable "high_perf_disk_type" {
+    type = "string"
+    description = "High performance disk type"
+    default = "Standard_LRS"
+}
 #########################################
 ###### Common Resources
 #########################################
@@ -260,7 +265,7 @@ resource "azurerm_virtual_machine" "node" {
 
     storage_data_disk {
         name              = "node-datadisk-container-${random_string.suffix.result}"
-        managed_disk_type = "Standard_LRS"
+        managed_disk_type = "${var.high_perf_disk_type}"
         create_option     = "Empty"
         lun               = 0
         disk_size_gb      = "100"
@@ -269,7 +274,7 @@ resource "azurerm_virtual_machine" "node" {
 
     storage_data_disk {
         name              = "node-datadisk-docker-${random_string.suffix.result}"
-        managed_disk_type = "Standard_LRS"
+        managed_disk_type = "${var.high_perf_disk_type}"
         create_option     = "Empty"
         lun               = 1
         disk_size_gb      = "200"

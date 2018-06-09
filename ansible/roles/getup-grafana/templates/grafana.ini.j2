@@ -11,15 +11,15 @@ app_mode = production
 [paths]
 # Path to where grafana can store temp files, sessions, and the sqlite3 db (if that is used)
 #
-;data = /var/lib/grafana
+data = /var/lib/grafana
 #
 # Directory where grafana can store logs
 #
-;logs = /var/log/grafana
+logs = /var/log/grafana
 #
 # Directory where grafana will automatically scan and look for plugins
 #
-;plugins = /var/lib/grafana/plugins
+plugins = /var/lib/grafana/plugins
 
 #
 #################################### Server ####################################
@@ -51,7 +51,7 @@ router_logging = true
 ;static_root_path = public
 
 # enable gzip
-;enable_gzip = false
+enable_gzip = true
 
 # https certs & key file
 ;cert_file =
@@ -91,7 +91,7 @@ path = grafana.db
 #################################### Session ####################################
 [session]
 # Either "memory", "file", "redis", "mysql", "postgres", default is "file"
-provider = memory
+provider = file
 
 # Provider config options
 # memory: not have any config yet
@@ -99,13 +99,13 @@ provider = memory
 # redis: config like redis server e.g. `addr=127.0.0.1:6379,pool_size=100,db=grafana`
 # mysql: go-sql-driver/mysql dsn config string, e.g. `user:password@tcp(127.0.0.1:3306)/database_name`
 # postgres: user=a password=b host=localhost port=5432 dbname=c sslmode=disable
-;provider_config = sessions
+provider_config = sessions
 
 # Session cookie name
-;cookie_name = grafana_sess
+cookie_name = grafana_sess
 
 # If you use session in https only, default is false
-;cookie_secure = false
+cookie_secure = false
 
 # Session life time, default is 86400
 ;session_life_time = 86400
@@ -191,32 +191,88 @@ default_theme = dark
 
 [auth]
 # Set to true to disable (hide) the login form, useful if you use OAuth, defaults to false
-disable_login_form = false
+disable_login_form = true
 
 # Set to true to disable the signout link in the side menu. useful if you use auth.proxy, defaults to false
-disable_signout_menu = false
+disable_signout_menu = true
 
-[auth.proxy]
-;enabled = true
-;header_name = X-Remote-User
-;header_property = username
-;auto_sign_up = true
-
-#################################### Google Auth ##########################
+#################################### Anonymous Auth ######################
+[auth.anonymous]
+# enable anonymous access
+enabled = true
+# specify organization name that should be used for unauthenticated users
+org_name = Main Org.
+# specify role for unauthenticated users
+org_role = Admin
+#################################### Github Auth #########################
+[auth.github]
+enabled = false
+allow_sign_up = true
+client_id = some_id
+client_secret = some_secret
+scopes = user:email
+auth_url = https://github.com/login/oauth/authorize
+token_url = https://github.com/login/oauth/access_token
+api_url = https://api.github.com/user
+team_ids =
+allowed_organizations =
+#################################### Google Auth #########################
 [auth.google]
-;enabled = true
-;allow_sign_up = true
-;client_id = $GF_GOOGLE_AUTH_CLIENT_ID
-;client_secret = $GF_GOOGLE_AUTH_CLIENT_SECRET
-;scopes = https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email
-;auth_url = https://accounts.google.com/o/oauth2/auth
-;token_url = https://accounts.google.com/o/oauth2/token
-;api_url = https://www.googleapis.com/oauth2/v1/userinfo
-;allowed_domains = example.com
-
+enabled = false
+allow_sign_up = true
+client_id = some_client_id
+client_secret = some_client_secret
+scopes = https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email
+auth_url = https://accounts.google.com/o/oauth2/auth
+token_url = https://accounts.google.com/o/oauth2/token
+api_url = https://www.googleapis.com/oauth2/v1/userinfo
+allowed_domains =
+hosted_domain =
+#################################### Grafana.com Auth ####################
+# legacy key names (so they work in env variables)
+[auth.grafananet]
+enabled = false
+allow_sign_up = true
+client_id = some_id
+client_secret = some_secret
+scopes = user:email
+allowed_organizations =
+[auth.grafana_com]
+enabled = false
+allow_sign_up = true
+client_id = some_id
+client_secret = some_secret
+scopes = user:email
+allowed_organizations =
+#################################### Generic OAuth #######################
+[auth.generic_oauth]
+name = OAuth
+enabled = false
+allow_sign_up = true
+client_id = some_id
+client_secret = some_secret
+scopes = user:email
+auth_url =
+token_url =
+api_url =
+team_ids =
+allowed_organizations =
 #################################### Basic Auth ##########################
 [auth.basic]
 enabled = false
+#################################### Auth Proxy ##########################
+[auth.proxy]
+enabled = true
+header_name = X-WEBAUTH-USER
+header_property = username
+auto_sign_up = true
+ldap_sync_ttl = 60
+whitelist =
+#################################### Auth LDAP ###########################
+[auth.ldap]
+enabled = false
+config_file = /etc/grafana/ldap.toml
+allow_sign_up = true
 
 #################################### SMTP / Emailing ##########################
 [smtp]

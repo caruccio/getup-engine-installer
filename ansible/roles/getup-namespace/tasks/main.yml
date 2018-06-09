@@ -1,0 +1,8 @@
+---
+- name: Ensure getup namespace
+  oc_project:
+    state: present
+    name: "{{ getupcloud_namespace }}"
+    node_selector:
+    - role=infra
+

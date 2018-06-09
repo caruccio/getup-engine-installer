@@ -42,11 +42,6 @@ openshift_release=v3.9
 # your router
 openshift_master_default_subdomain=${APPS_ZONE}
 
-#Set cluster_hostname to point at your load balancer
-openshift_master_cluster_hostname=${API_ENDPOINT}
-
-
-
 ###############################################################################
 # Additional configuration variables follow                                   #
 ###############################################################################
@@ -155,7 +150,7 @@ openshift_master_loopback_ratelimit_burst=2000
 
 # Items added, as is, to end of /etc/sysconfig/docker OPTIONS
 # Default value: "--log-driver=journald"
-#openshift_docker_options="-l warn --ipv6=false"
+openshift_docker_options="--log-opt max-size=10M --log-opt max-file=3"
 
 # Specify exact version of Docker to configure or upgrade to.
 # Downgrades are not supported and will error out. Be careful when upgrading docker from < 1.10 to > 1.10.
@@ -630,11 +625,9 @@ openshift_metrics_heapster_limits_cpu=100m
 openshift_metrics_hawkular_hostname=hawkular-metrics.${APPS_ZONE}
 # Configure the prefix and version for the component images
 #openshift_metrics_image_prefix=docker.io/openshift/origin-
-#openshift_metrics_image_version=v3.9
+openshift_metrics_image_version=${TARGET_OPENSHIFT_RELEASE}
 # when openshift_deployment_type=='openshift-enterprise'
 #openshift_metrics_image_prefix=registry.access.redhat.com/openshift3/
-#openshift_metrics_image_version=v3.9
-openshift_metrics_image_version=${OPENSHIFT_METRICS_IMAGE_VERSION}
 openshift_metrics_duration=7
 
 #
@@ -681,6 +674,8 @@ openshift_logging_es_cluster_size=1
 # Option C - Dynamic -- If openshift supports dynamic volume provisioning for
 # your cloud platform use this.
 openshift_logging_storage_kind=${OPENSHIFT_LOGGING_STORAGE_KIND}
+openshift_logging_es_pvc_size=100Gi
+
 #
 # Option D - none -- Logging will use emptydir volumes which are destroyed when
 # pods are deleted
@@ -696,11 +691,9 @@ openshift_logging_kibana_hostname=kibana.${APPS_ZONE}
 #openshift_logging_es_cluster_size=${INFRA_NODES_TOTAL}
 # Configure the prefix and version for the component images
 #openshift_logging_image_prefix=docker.io/openshift/origin-
-#openshift_logging_image_version=v3.9.0
+openshift_logging_image_version=${TARGET_OPENSHIFT_RELEASE}
 # when openshift_deployment_type=='openshift-enterprise'
 #openshift_logging_image_prefix=registry.access.redhat.com/openshift3/
-#openshift_logging_image_version=3.9.0
-openshift_logging_image_version=${OPENSHIFT_LOGGING_IMAGE_VERSION}
 
 # https://hub.docker.com/r/openshift/oauth-proxy/tags/
 openshift_logging_elasticsearch_proxy_image_version=v1.1.0
@@ -905,11 +898,11 @@ openshift_master_overwrite_named_certificates=true
 #
 # Signing secrets, used to authenticate sessions using
 # HMAC. Recommended to use secrets with 32 or 64 bytes.
-openshift_master_session_auth_secrets=['${OPENSHIFT_MASTER_SESSION_AUTH_SECRETS}']
+openshift_master_session_auth_secrets=['${OPENSHIFT_MASTER_SESSION_AUTH_SECRET}']
 #
 # Encrypting secrets, used to encrypt sessions. Must be 16, 24, or 32
 # characters long, to select AES-128, AES-192, or AES-256.
-openshift_master_session_encryption_secrets=['${OPENSHIFT_MASTER_SESSION_ENCRYPTION_SECRETS}']
+openshift_master_session_encryption_secrets=['${OPENSHIFT_MASTER_SESSION_ENCRYPTION_SECRET}']
 
 # configure how often node iptables rules are refreshed
 #openshift_node_iptables_sync_period=5s
@@ -1052,7 +1045,7 @@ openshift_master_audit_config={"enabled": true}
 # use this line.
 # The directory in "auditFilePath" will be created if it's not
 # exist
-openshift_master_audit_config={"enabled": true, "auditFilePath": "/var/log/openshift-audit/openshift-audit.log", "maximumFileRetentionDays": 30, "maximumFileSizeMegabytes": 500, "maximumRetainedFiles": 10}
+openshift_master_audit_config={"enabled": true, "auditFilePath": "/var/log/openshift-audit/openshift-audit.log", "maximumFileRetentionDays": 30, "maximumFileSizeMegabytes": 100, "maximumRetainedFiles": 10}
 
 # Enable origin repos that point at Centos PAAS SIG, defaults to true, only used
 # by openshift_deployment_type=origin
@@ -1250,13 +1243,16 @@ openshift_grafana_cpu_limit="1000m"
 #########################################################
 
 [all:vars]
+kubernetes_api_endpoint="${API_ENDPOINT}"
+kubernetes_service_account_token_file="/run/secrets/kubernetes.io/serviceaccount/token"
+osm_default_node_selector="role=app"
+infra_count=${INFRA_COUNT}
 
 getupcloud_cluster_name="${NAME}"
 getupcloud_cluster_zone="${CLUSTER_ZONE}"
 getupcloud_apps_zone="${APPS_ZONE}"
-getupcloud_api_endpoint="${API_ENDPOINT}"
 getupcloud_portal_endpoint="${PORTAL_ENDPOINT}"
-getupcloud_gapi_endpoint="${GAPI_ENDPOINT}"
+getupcloud_api_endpoint="${GAPI_ENDPOINT}"
 getupcloud_usage_endpoint="${USAGE_ENDPOINT}"
 getupcloud_vendor_name="${GETUPCLOUD_VENDOR_NAME}"
 getupcloud_vendor_title="${GETUPCLOUD_VENDOR_TITLE}"
@@ -1269,18 +1265,59 @@ getupcloud_azure_resource_group="${AZURE_RESOURCE_GROUP}"
 
 # Install getupcloud api backend
 getupcloud_install_api=true
+getupcloud_api_base_url="https://${GAPI_ENDPOINT}"
+getupcloud_portal_base_url="https://${PORTAL_ENDPOINT}"
 getupcloud_api_admin_username="${GETUPCLOUD_API_ADMIN_USERNAME}"
 getupcloud_api_admin_password="${GETUPCLOUD_API_ADMIN_PASSWORD}"
 getupcloud_api_impersonate_username="${GETUPCLOUD_API_IMPERSONATE_USERNAME}"
 getupcloud_api_impersonate_password="${GETUPCLOUD_API_IMPERSONATE_PASSWORD}"
+getupcloud_api_django_secret_key="${GETUPCLOUD_API_DJANGO_SECRET_KEY}"
+getupcloud_api_default_max_projects=2
+getupcloud_api_validated_max_projects=10
+getupcloud_api_locked_projects_expire_days=60
+getupcloud_api_enable_prometheus=False
 
-# getup api database configs
+getupcloud_api_time_zone="UTC"
+getupcloud_api_use_i18n="True"
+getupcloud_api_use_l10n="True"
+getupcloud_api_use_tz="True"
+
+getupcloud_api_enable_signup="${GETUPCLOUD_API_ENABLE_SIGNUP}"
+getupcloud_api_validate_account="signup"
+getupcloud_api_default_tier_offer="${GETUPCLOUD_API_DEFAULT_TIER_OFFER}"
+getupcloud_api_allow_session_authentication="False"
+
+getupcloud_api_email_backend="${GETUPCLOUD_API_EMAIL_BACKEND}"
+getupcloud_api_smtp_hostname="${GETUPCLOUD_API_SMTP_HOSTNAME}"
+getupcloud_api_smtp_username="${GETUPCLOUD_API_SMTP_USERNAME}"
+getupcloud_api_smtp_password="${GETUPCLOUD_API_SMTP_PASSWORD}"
+getupcloud_api_mailgun_access_key="${GETUPCLOUD_API_MAILGUN_ACCESS_KEY}"
+getupcloud_api_default_from_email="${GETUPCLOUD_VENDOR_TITLE} | Hello <hello@${CLUSTER_ZONE}>"
+getupcloud_api_contact_email="${GETUPCLOUD_VENDOR_TITLE} <contact@${CLUSTER_ZONE}>"
+getupcloud_api_billing_email="${GETUPCLOUD_VENDOR_TITLE} | Billing <no-reploy@${CLUSTER_ZONE}>"
+
+getupcloud_zendesk_domain="${GETUPCLOUD_ZENDESK_DOMAIN}"
+getupcloud_zendesk_token="${GETUPCLOUD_ZENDESK_TOKEN}"
+
+getupcloud_api_pagarme_api_key="${GETUPCLOUD_API_PAGARME_API_KEY}"
+getupcloud_api_pagarme_postback_url="${GETUPCLOUD_API_PAGARME_POSTBACK_URL}"
+
+getupcloud_api_django_default_logger="production"
+getupcloud_api_log_fmt=""
+
+# getup databases config
 getupcloud_database_mode="${GETUPCLOUD_DATABASE_MODE}"
-getupcloud_database_managed_hostname="${GETUPCLOUD_DATABASE_HOSTNAME}"
-getupcloud_database_managed_username="${GETUPCLOUD_DATABASE_USERNAME}"
-getupcloud_database_managed_password="${GETUPCLOUD_DATABASE_PASSWORD}"
-getupcloud_database_managed_api_name="${GETUPCLOUD_DATABASE_API_NAME}"
-getupcloud_database_managed_usage_name="${GETUPCLOUD_DATABASE_USAGE_NAME}"
+getupcloud_api_database_engine="mysql"
+
+getupcloud_api_database_service_name="${GETUPCLOUD_API_DATABASE_HOSTNAME}"
+getupcloud_api_database_name="${GETUPCLOUD_API_DATABASE_NAME}"
+getupcloud_api_database_user="${GETUPCLOUD_API_DATABASE_USERNAME}"
+getupcloud_api_database_password="${GETUPCLOUD_API_DATABASE_PASSWORD}"
+
+getupcloud_usage_database_service_name="${GETUPCLOUD_USAGE_DATABASE_HOSTNAME}"
+getupcloud_usage_database_name="${GETUPCLOUD_USAGE_DATABASE_NAME}"
+getupcloud_usage_database_user="${GETUPCLOUD_USAGE_DATABASE_USERNAME}"
+getupcloud_usage_database_password="${GETUPCLOUD_USAGE_DATABASE_PASSWORD}"
 
 # Assets storage for django
 getupcloud_api_storage_backend="${GETUPCLOUD_API_STORAGE_BACKEND}"
@@ -1296,6 +1333,7 @@ getupcloud_api_aws_location="${GETUPCLOUD_API_AWS_REGION}"
 
 # Install getupcloud billing collector
 getupcloud_install_billing=true
+getupcloud_billing_service_name="usage"
 
 # Install getupcloud backup routines
 getupcloud_install_backup=true
@@ -1318,11 +1356,19 @@ getupcloud_install_observer=${GETUPCLOUD_OBSERVER_INSTALL}
 
 getupcloud_slack_operations_webhook="${GETUPCLOUD_SLACK_OPERATIONS_WEBHOOK}"
 getupcloud_slack_operations_channel="${GETUPCLOUD_SLACK_OPERATIONS_CHANNEL}"
+getupcloud_slack_token="${GETUPCLOUD_SLACK_TOKEN}"
+getupcloud_slack_username="error-bot"
+getupcloud_slack_fail_silently="True"
 
 # Alertmanager zabbix integration
 getupcloud_install_alertmanager_zabbix_webhook="${ZABBIX_ENABLED}"
 getupcloud_zabbix_server_host="${ZABBIX_SERVER_HOST}"
 getupcloud_zabbix_server_port="${ZABBIX_SERVER_PORT}"
 getupcloud_zabbix_host_annotation="zabbix_host"
-getupcloud_alertmanager_zabbix_webhook_replicas=2
+getupcloud_alertmanager_zabbix_webhook_replicas=3
+
+# Analytics
+getupcloud_intercom_secure_mode_secret_key="${INTERCOM_SECURE_MODE_SECRET_KEY}"
+getupcloud_analytics_write_key="${ANALYTICS_WRITE_KEY}"
+
 # -----------------------------------------------------------------------------

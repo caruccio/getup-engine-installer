@@ -10,9 +10,8 @@
     - init
 
 - name: Install Billing
-  hosts: oo_first_master
+  hosts: masters
   tags:
     - getup-usage
-  tasks:
-    - include_role:
-        name: getup-usage
+  roles:
+    - getup-usage

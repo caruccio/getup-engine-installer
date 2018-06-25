@@ -1,6 +1,6 @@
---- /openshift-ansible/roles/openshift_facts/library/openshift_facts.py	2018-01-10 14:45:41.000000000 +0000
-+++ /openshift-ansible/roles/openshift_facts/library/openshift_facts.py.new	2018-05-29 19:32:09.204650181 +0000
-@@ -937,6 +937,9 @@ def set_nodename(facts):
+--- /openshift-ansible/roles/openshift_facts/library/openshift_facts.py	2018-06-06 18:26:01.150426798 +0000
++++ /openshift-ansible/roles/openshift_facts/library/openshift_facts.py.new	2018-06-06 15:06:20.000000000 +0000
+@@ -639,6 +639,9 @@ def set_nodename(facts):
          if 'cloudprovider' in facts and facts['cloudprovider']['kind'] == 'gce':
              facts['node']['nodename'] = facts['provider']['metadata']['instance']['hostname'].split('.')[0]
 

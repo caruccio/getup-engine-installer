@@ -6,7 +6,7 @@
     -n {{ getupcloud_namespace }}
     -o name
     --ignore-not-found
-  register: oc_namespace_backup
+  register: oc_database_backup
 
 - name: Create database-backup cronjob
   command: >
@@ -20,7 +20,7 @@
     --schedule '5 2 * * *'
     --restart Never
     --labels 'job=namespace-backup,provider=azure,storage_type={{ getupcloud_backup_storage_kind }}'
-  when: '"namespace-backup" not in oc_namespace_backup.stdout'
+  when: '"database-backup" not in oc_database_backup.stdout'
 
 #- name: Check Azure Managed Disk backup cronjob
 #  command: >

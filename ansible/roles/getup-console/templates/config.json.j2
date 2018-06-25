@@ -17,12 +17,12 @@
     "defaultContainerSize": "small",
     "buildLogLevel":        "0",
     "segmentWriteKey":      null,
-
+    "index":                "{{ index | default('index.html') }}",
 
     "enableModule": {
-        "billing":          {{ enable_module_billing | default(false) }},
-        "prices":           {{ enable_module_prices | default(false) }}
+        "billing":          {{ enable_module_billing | default(false) | to_json }},
+        "prices":           {{ enable_module_prices | default(false) | to_json }}
     },
 
-    "urls": {{ urls }}
+    "urls": {{ urls | default({}) | to_nice_json }}
 }

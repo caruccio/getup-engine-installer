@@ -1,104 +1,196 @@
 ---
+- include_role:
+    name: getup-namespace
+
 - name: Create temp directory
   command: mktemp -d /tmp/getupcloud-billing-XXXXXX
-  register: repo_dir
+  register: tmp_dir
   changed_when: False
   check_mode: no
 
 - name: Copy deploy key
   copy:
     src: "{{ getupcloud_billing_repository_key_file }}"
-    dest: "{{ repo_dir.stdout }}/id_rsa"
+    dest: "{{ tmp_dir.stdout }}/id_rsa"
     mode: 0600
 
-- name: Clone getup-billing src repo
+- name: Clone getup-usage repo
   git:
     repo: "{{ getupcloud_billing_repository }}"
     version: "{{ getupcloud_billing_repository_branch }}"
-    key_file: "{{ repo_dir.stdout }}/id_rsa"
+    key_file: "{{ tmp_dir.stdout }}/id_rsa"
     accept_hostkey: yes
     clone: yes
-    dest: "{{ repo_dir.stdout }}/getup-billing"
-  register: getup_billing_src_repo
+    dest: "{{ tmp_dir.stdout }}/getup-usage"
 
 - debug:
-    msg: "Cloned getup-billing to {{ repo_dir.stdout }}/getup-billing"
+    msg: "Cloned getup-usage to {{ tmp_dir.stdout }}/getup-usage"
 
-- name: Check getup-billing repo dir
-  stat:
-    path: /usr/share/getup-billing
-  register: getup_billing_repo
-
-- name: Update getup-billing repo
-  shell: >
-    git reset --hard &&
-    git remote set-url origin {{ repo_dir.stdout }}/getup-billing &&
-    git pull
-  args:
-    chdir: /usr/share/getup-billing/
-  when: getup_billing_repo.stat.isdir is defined and getup_billing_repo.stat.isdir
-
-- name: Install getup-billing
+- name: Install getup-usage collector
   git:
-    repo: "{{ repo_dir.stdout }}/getup-billing"
+    repo: "{{ tmp_dir.stdout }}/getup-usage"
     version: "{{ getupcloud_billing_repository_branch }}"
     clone: yes
-    dest: "/usr/share/getup-billing"
-  when: getup_billing_repo.stat.isdir is not defined
+    dest: "{{ getupcloud_billing_install_dir }}"
 
-- name: Install deps
-  yum:
-    state: present
-    name:
-      - gcc
-      - mysql-devel
-      - python-devel
-      - python-setuptools
+- name: Install dependencies
+  block:
+  - yum:
+      state: present
+      name:
+        - gcc
+        - mysql-devel
+        - python-devel
+        - python-setuptools
 
-- name: Install virtualenv
-  command: easy_install virtualenv
+  - name: Install virtualenv
+    command: easy_install virtualenv
 
-- name: Install pip
-  command: easy_install pip
+  - name: Install pip
+    command: easy_install pip
 
-- name: Check virtualenv
-  stat:
-    path: /usr/share/getup-billing/.env
-  register: env_dir
+  - name: Check virtualenv
+    stat:
+      path: "{{ getupcloud_billing_install_dir }}/.env"
+    register: env_dir
 
-- name: Init virtualenv
-  shell: >
-    virtualenv .env &&
-    source .env/bin/activate &&
-    pip install -r requirements.txt
-  args:
-    chdir: /usr/share/getup-billing
-  when: env_dir.stat.exists == False
+  - name: Init virtualenv
+    shell: >
+      virtualenv .env &&
+      source .env/bin/activate &&
+      pip install -r requirements.txt
+    args:
+      chdir: "{{ getupcloud_billing_install_dir }}/collector"
+    when: env_dir.stat.exists == False
 
 - name: Create service account
   oc_serviceaccount:
-    name: billing
+    name: usage-collector
     state: present
     namespace: "{{ getupcloud_namespace }}"
+  when: ansible_host == groups.oo_first_master[0]
 
 - name: Add cluster role to user
   oc_adm_policy_user:
-    user: "system:serviceaccount:{{ getupcloud_namespace }}:billing"
+    user: "system:serviceaccount:{{ getupcloud_namespace }}:usage-collector"
     resource_kind: cluster-role
     resource_name: cluster-reader
     state: present
+  when: ansible_host == groups.oo_first_master[0]
 
 - name: Create log dir
   file:
-    path: /var/log/getup-billing
+    path: /var/log/getup-usage
     state: directory
     owner: "{{ ansible_user }}"
     mode: 0750
 
+- name: Create database PVC
+  oc_pvc:
+    state: present
+    namespace: "{{ getupcloud_namespace }}"
+    name: mysql-usage
+    access_modes:
+    - ReadWriteOnce
+    volume_capacity: 100Gi
+  when: ansible_host == groups.oo_first_master[0]
+
+- name: Generate usage database deployment
+  template:
+    src: "templates/mysql.yaml.j2"
+    dest: "mysql.yaml"
+  vars:
+    database_service_name: "{{ getupcloud_usage_database_service_name }}"
+    database_name: "{{ getupcloud_usage_database_name }}"
+    database_username: "{{ getupcloud_usage_database_user }}"
+    database_password: "{{ getupcloud_usage_database_password }}"
+  when: ansible_host == groups.oo_first_master[0]
+
+- name: Create usage database deployment
+  oc_obj:
+    state: present
+    namespace: "{{ getupcloud_namespace }}"
+    kind: deploymentconfig
+    name: mysql-usage
+    files:
+      - "mysql.yaml"
+    delete_after: yes
+  when: ansible_host == groups.oo_first_master[0]
+
+- name: Create Database service
+  oc_service:
+    namespace: "{{ getupcloud_namespace }}"
+    name: mysql-usage
+    ports:
+    - name: 3306-tcp
+      port: 3306
+      protocol: TCP
+      targetPort: 3306
+    selector:
+      app: mysql-usage
+    session_affinity: None
+    service_type: ClusterIP
+  when: ansible_host == groups.oo_first_master[0]
+
+- name: Wait for database to become ready
+  wait_for:
+    host: "mysql-usage.{{ getupcloud_namespace }}.svc"
+    port: 3306
+    delay: 2
+    sleep: 2
+    state: present
+  when: ansible_host == groups.oo_first_master[0]
+
+## Usage API
+
+- block:
+  - name: Generate Usage API deployment
+    template:
+      src: "templates/usage.yaml.j2"
+      dest: "usage.yaml"
+    when: ansible_host == groups.oo_first_master[0]
+
+  - name: Create Usage API deployment
+    oc_obj:
+      state: present
+      namespace: "{{ getupcloud_namespace }}"
+      kind: deploymentconfig
+      name: usage
+      files:
+        - "usage.yaml"
+      delete_after: yes
+
+  - name: Create Usage API service
+    oc_service:
+      namespace: "{{ getupcloud_namespace }}"
+      name: usage
+      ports:
+      - name: 8080-tcp
+        port: 8080
+        protocol: TCP
+        targetPort: 8080
+      selector:
+        app: usage
+      session_affinity: None
+      service_type: ClusterIP
+
+  - name: Wait for Usage API to become available
+    wait_for:
+      host: "usage.{{ getupcloud_namespace }}.svc"
+      port: 8080
+      delay: 2
+      sleep: 2
+      timeout: 1200
+      state: present
+  when: ansible_host == groups.oo_first_master[0]
+
+## Migrate DB and start collecting
+
 - name: Migrate usage database
   shell: ./pull-metrics migrate_db
   args:
-    chdir: /usr/share/getup-billing
+    chdir: "{{ getupcloud_billing_install_dir }}/collector"
+  when: ansible_host == groups.oo_first_master[0]
 
 - name: Create usage crontab
   cron:
@@ -107,7 +199,8 @@
     job: >
       OPENSHIFT_MASTER_URL=https://{{ openshift_master_cluster_hostname }}
       BILLING_NAMESPACE={{ getupcloud_namespace }}
-      /usr/share/getup-billing/pull-metrics > /var/log/getup-billing/pull-metrics.log
+      SERVICE_ACCOUNT_NAME=usage-collector
+      {{ getupcloud_billing_install_dir }}/collector/pull-metrics > /var/log/getup-billing/pull-metrics.log
 
 - name: Create partials and trial control crontab
   cron:
@@ -118,4 +211,17 @@
     job: >
       OPENSHIFT_MASTER_URL=https://{{ openshift_master_cluster_hostname }}
       BILLING_NAMESPACE={{ getupcloud_namespace }}
-      /usr/share/getup-billing/make-partials > /var/log/getup-billing/make-partials.log
+      SERVICE_ACCOUNT_NAME=usage-collector
+      {{ getupcloud_billing_install_dir }}/collector/make-partials > /var/log/getup-billing/make-partials.log
+
+- name: Create invoice crontab
+  cron:
+    name: "Generate invoices"
+    user: "{{ ansible_user }}"
+    minute: 30
+    hour: 0
+    day: 1
+    job: >
+      BILLING_NAMESPACE={{ getupcloud_namespace }}
+      {{ getupcloud_billing_install_dir }}/collector/make-invoices > /var/log/getup-billing/make-invoices.log
+

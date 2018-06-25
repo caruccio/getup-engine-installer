@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app: usage
+  name: usage
+spec:
+  replicas: {{ infra_count | default(1) }}
+  selector:
+    app: usage
+  strategy:
+    resources: {}
+    rollingParams:
+      intervalSeconds: 1
+      maxSurge: 25%
+      maxUnavailable: 25%
+      timeoutSeconds: 600
+      updatePeriodSeconds: 1
+    type: Rolling
+  template:
+    metadata:
+      labels:
+        app: usage
+    spec:
+      containers:
+      - env:
+        - name: PATH
+          value: /opt/app-root/src/.local/bin/:/opt/app-root/src/bin:/opt/app-root/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        - name: STI_SCRIPTS_URL
+          value: image:///usr/libexec/s2i
+        - name: STI_SCRIPTS_PATH
+          value: /usr/libexec/s2i
+        - name: HOME
+          value: /opt/app-root/src
+        - name: BASH_ENV
+          value: /opt/app-root/etc/scl_enable
+        - name: ENV
+          value: /opt/app-root/etc/scl_enable
+        - name: PROMPT_COMMAND
+          value: . /opt/app-root/etc/scl_enable
+        - name: PYTHON_VERSION
+          value: "3.6"
+        - name: DATABASE_SERVICE_NAME
+          value: "{{ getupcloud_usage_database_service_name }}"
+        - name: MYSQL_USER
+          value: "{{ getupcloud_usage_database_user }}"
+        - name: MYSQL_PASSWORD
+          value: "{{ getupcloud_usage_database_password }}"
+        - name: MYSQL_DATABASE
+          value: "{{ getupcloud_usage_database_name }}"
+        - name: MYSQL_PORT
+          value: "3306"
+        - name: APP_FILE
+          value: /opt/app-root/src/wsgi.pyc
+        image: getupcloud/usage:v1.0
+        imagePullPolicy: Always
+        name: python
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+          requests:
+            cpu: 100m
+            memory: 512Mi
+        terminationMessagePath: /dev/termination-log
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+  test: false
+  triggers:
+  - type: ConfigChange

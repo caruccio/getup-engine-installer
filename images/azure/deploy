@@ -4,6 +4,12 @@ set -e
 
 ROOT_DIR=${0%/*}
 
+if [ "${USE_HIGH_PERF_DISKS}" == yes ]; then
+    export HIGH_PERF_DISK_TYPE=${HIGH_PERF_DISK_TYPE:-Premium_LRS}
+else
+    export HIGH_PERF_DISK_TYPE=Standard_LRS
+fi
+
 function build()
 {
     if [ -x $ROOT_DIR/pre-deploy ]; then

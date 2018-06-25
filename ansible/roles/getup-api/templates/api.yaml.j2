@@ -1,0 +1,102 @@
+apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app: api
+  name: api
+spec:
+  replicas: {{ infra_count | default(1) }}
+  selector:
+    app: api
+  strategy:
+    resources: {}
+    rollingParams:
+      intervalSeconds: 1
+      maxSurge: 50%
+      maxUnavailable: 50%
+      timeoutSeconds: 600
+      updatePeriodSeconds: 1
+      pre:
+        execNewPod:
+          command:
+          - ./.s2i/bin/migrate-db.sh
+          containerName: api
+          env:
+          - name: APP_CONFIG
+            value: app_config.py
+          - name: DJANGO_LOG_LEVEL
+            value: INFO
+          volumes:
+          - api-config
+        failurePolicy: Abort
+    type: Rolling
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+      - image: getupcloud/api:v1.0
+        imagePullPolicy: Always
+        name: api
+        env:
+        - name: LC_ALL
+          value: "en_US.UTF-8"
+        - name: DJANGO_SECRET_KEY
+          value: "{{ getupcloud_api_django_secret_key }}"
+        - name: DJANGO_LOG_LEVEL
+          value: INFO
+        - name: DJANGO_DEBUG
+          value: "False"
+        - name: APP_CONFIG
+          value: app_config.py
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health/
+            port: 8080
+            scheme: HTTP
+            httpHeaders:
+            - name: Host
+              value: api
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health/
+            port: 8080
+            scheme: HTTP
+            httpHeaders:
+            - name: Host
+              value: api
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /opt/app-root/src/config
+          name: api-config
+        resources:
+          limits:
+              cpu: 1
+              memory: 1Gi
+          requests:
+              cpu: 100m
+              memory: 512Mi
+        terminationMessagePath: /dev/termination-log
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: api-config
+        configMap:
+          name: api
+          defaultMode: 0400
+  triggers:
+  - type: ConfigChange

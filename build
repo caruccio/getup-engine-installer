@@ -1,7 +1,7 @@
 #!/bin/bash
 
-image=getup-engine:${1:-v3.7}
-dockerfile=Dockerfile-${1:-v3.7}
+image=getup-engine:${1:-v3.9}
+dockerfile=Dockerfile-${1:-v3.9}
 
 echo "---> Building $image from $dockerfile"
 

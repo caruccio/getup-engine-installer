@@ -1,0 +1,38 @@
+#!/usr/bin/env python
+#
+
+from __future__ import print_function
+from ConfigParser import ConfigParser
+from StringIO import StringIO
+import os, sys
+
+# config definitions
+configs = ConfigParser()
+configs.read(os.path.dirname(__file__) + '/configs.ini')
+
+# file to sync definitions with
+target = ConfigParser()
+target.readfp(StringIO('[default]\n' + open(sys.argv[1]).read()))
+
+provider = target.get('default', 'provider').strip("\"")
+
+# Search for missing entries
+for section in configs.sections():
+    # ignore non-match providers
+    if section.startswith('Provider') and section != 'Provider{}'.format(provider.upper()):
+        continue
+
+    for option, description in configs.items(section):
+        if not target.has_option('default', option):
+            print('Missing: {} # {}'.format(option.upper(), description))
+
+# Search for unknown entries
+for option in [ o.strip("\"") for o in target.options('default') ]:
+    found = False
+    for section in configs.sections():
+        if configs.has_option(section, option):
+            found = True
+            break
+
+    if not found:
+        print('Unknown: {}={}'.format(option.upper(), target.get('default', option)))

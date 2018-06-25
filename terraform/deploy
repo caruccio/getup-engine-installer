@@ -16,7 +16,7 @@ fi
 
 if [ "${PROVIDER}" == azure ]; then
     echo Checking if Azure is logged in...
-    if ! az account show 2>/dev/null; then
+    if ! az account show 2>/dev/null | grep -q .; then
         az account get-access-token &>/dev/null || az login || exit 1
     fi
 fi

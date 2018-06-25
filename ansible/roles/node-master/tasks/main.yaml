@@ -14,45 +14,29 @@
   tags:
     - pre-install
 
-- name: Set etcd IO priority
-  become: yes
-  shell: ionice -p `pgrep etcd` -c1 -n3
-  tags:
-    - post-install
-
-- when: openshift_cloudprovider_kind | default('') == 'azure'
-  tags:
-    - post-install
+- name: Set etcd io priority
   block:
-  - name: Update cloudprovider master-config for Azure
-    yedit:
-      src: /etc/origin/master/master-config.yaml
-      key: kubernetesMasterConfig.apiServerArguments.cloud-provider
-      value:
-      - 'azure'
-  - name: Update cloudprovider master-config for Azure
-    yedit:
-      src: /etc/origin/master/master-config.yaml
-      key: kubernetesMasterConfig.apiServerArguments.cloud-config
-      value:
-      - '/etc/azure/azure.conf'
+  - lineinfile:
+      path: /usr/lib/systemd/system/etcd.service
+      regexp: '^{{ item }}'
+      line: "{{ item }}"
+      insertafter: '^ExecStart='
+    with_items:
+      - 'IOSchedulingClass=realtime'
+      - 'IOSchedulingPriority=1'
 
-  - name: Update cloudprovider master-config for Azure
-    yedit:
-      src: /etc/origin/master/master-config.yaml
-      key: kubernetesMasterConfig.controllerArguments.cloud-provider
-      value:
-      - 'azure'
+  - command: systemctl daemon-reload
 
-  - name: Update cloudprovider master-config for Azure
-    yedit:
-      src: /etc/origin/master/master-config.yaml
-      key: kubernetesMasterConfig.controllerArguments.cloud-config
-      value:
-      - '/etc/azure/azure.conf'
+  - systemd: name=etcd state=restarted
 
-  - name: Restart services
-    shell: echo
-    notify:
-    - restart master api
-    - restart master controllers
+  tags:
+    - post-install
+
+- name: Ensure read-only mode for .kube/config
+  file:
+    mode: 0644
+    owner: root
+    group: root
+    path: "/home/{{ ansible_user }}/.kube/config"
+  tags:
+  - post-install

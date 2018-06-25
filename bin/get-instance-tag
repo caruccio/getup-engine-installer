@@ -1,0 +1,25 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import json, sys, os
+
+try:
+    private_dns, tag_name = sys.argv[1:3]
+except ValueError:
+    print("Usage: %s instance-name tag-name" % sys.argv[0], file=sys.stderr)
+    sys.exit(1)
+
+state = json.load(open(os.environ.get('STATE_DIR', '/state') + '/terraform.tfstate'))
+resources = state['modules'][0]['resources']
+aws_instances = filter(lambda x: x.startswith('aws_instance.'), resources.keys())
+
+for aws_instance in aws_instances:
+    try:
+        instance = resources[aws_instance]
+        if instance['primary']['attributes']['private_dns'] == private_dns:
+            print(instance['primary']['attributes']['tags.%s' % tag_name])
+            sys.exit(0)
+    except KeyError:
+        pass
+
+sys.exit(1)

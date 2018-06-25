@@ -5,12 +5,12 @@ set -e
 ROOT_DIR=${0%/*}
 packerOptions="$@"
 
-if [ "${USE_HIGH_PERF_DISKS}" == yes ]; then
-    export HIGH_PERF_DISK_TYPE=io1
+if [ "${USE_HIGH_PERF_DISKS}" == true ]; then
+    export HIGH_PERF_DISK_TYPE=${HIGH_PERF_DISK_TYPE:-io1}
     export HIGH_PERF_DISK_IOPS=${HIGH_PERF_DISK_IOPS:-1000}
 else
     export HIGH_PERF_DISK_TYPE=gp2
-    export HIGH_PERF_DISK_IOPS=${HIGH_PERF_DISK_IOPS:-300} # makes no sense...
+    export HIGH_PERF_DISK_IOPS=${HIGH_PERF_DISK_IOPS:-300} # ignored
 fi
 
 if [ -z "${PACKER_AWS_SUBNET_ID}" -a -v PACKER_AWS_VPC_ID ]; then

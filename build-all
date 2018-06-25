@@ -5,7 +5,7 @@ git pull
 sleep 2
 
 latest=v3.9
-for release in v3.6 v3.7 v3.9; do
+for release in v3.9; do
     (
         rcolor=$(tput sgr0)
         color=$(tput sgr0 && tput setaf ${release#*.})

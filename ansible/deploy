@@ -3,7 +3,7 @@
 case $TARGET_OPENSHIFT_RELEASE in
     v3.9) ;;
     *)
-        echo Unsuported Openshift version: $TARGET_OPENSHIFT_RELEASE
+        echo Unsupported Openshift version: $TARGET_OPENSHIFT_RELEASE
         exit 1
 esac
 

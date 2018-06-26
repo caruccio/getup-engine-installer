@@ -150,7 +150,7 @@ openshift_master_loopback_ratelimit_burst=2000
 
 # Items added, as is, to end of /etc/sysconfig/docker OPTIONS
 # Default value: "--log-driver=journald"
-openshift_docker_options="--log-opt max-size=10M --log-opt max-file=3"
+openshift_docker_options="--log-opt max-size=10M --log-opt max-file=10"
 
 # Specify exact version of Docker to configure or upgrade to.
 # Downgrades are not supported and will error out. Be careful when upgrading docker from < 1.10 to > 1.10.

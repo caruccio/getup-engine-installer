@@ -1,0 +1,32 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: image-pruner
+  labels:
+    role: pruner
+spec:
+  schedule: "00 */3 * * *"  
+  jobTemplate:             
+    spec:
+      template:
+        metadata:
+          labels:
+            parent: pruner
+            role: pruner
+        spec:
+          containers:
+          - image: getupcloud/imagepruner:latest
+            name: image-pruner
+            env:
+              - name: KEEP_COMPLETE
+                value: "10"
+              - name: KEEP_FAILED
+                value: "10"
+              - name: KEEP_TAGS
+                value: "10"
+              - name: KEEP_YOUNGER
+                value: "192h"
+          restartPolicy: Never
+          serviceAccount: image-pruner
+          nodeSelector:
+            role: infra

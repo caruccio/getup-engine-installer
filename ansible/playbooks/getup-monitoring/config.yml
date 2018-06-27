@@ -19,7 +19,7 @@
         name: getup-prometheus
     - include_role:
         name: getup-grafana
-
+    
 - name: Prometheus/Grafana Integration
   hosts: oo_first_master
   gather_facts: no

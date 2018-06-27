@@ -1,0 +1,40 @@
+- name: Add Service Account
+  block:
+    - oc_serviceaccount:
+        state: present
+        name: image-pruner
+        namespace: "{{ openshift_imagepruner_namespace  }}"
+        secrets:
+          - image-pruner
+
+- name: Assign role to Service Account
+  oc_adm_policy_user:
+    state: present
+    user: "system:serviceaccount:{{ openshift_imagepruner_namespace }}:image-pruner"
+    namespace: "{{ openshift_imagepruner_namespace  }}"
+    resource_kind: cluster-role
+    resource_name: cluster-admin
+
+- name: Create temp directory
+  command: mktemp -d /tmp/getupcloud-imagepruner
+  register: tmp_dir
+  changed_when: False
+  check_mode: no
+
+- name: Add template
+  template:
+    src: imagepruner.j2
+    dest: "{{ tmp_dir.stdout }}/imagepruner.yml"
+
+- name: Create CronJob for image pruner
+  oc_obj:
+    state: present
+    namespace: "{{  openshift_imagepruner_namespace }}"
+    kind: CronJob
+    name: image-pruner
+    files:
+      - "{{ dir }}/imagepruner.yml"
+    delete_after: yes
+  
+  
+  

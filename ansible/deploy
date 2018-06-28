@@ -139,7 +139,7 @@ if stage_is playbook; then
             fi
         done
     else
-        playbook_path=$(realpath $OLDPWD/${playbook_name})
+        playbook_path=${playbook_name}
     fi
 
     echo Starting playbook: $playbook_path

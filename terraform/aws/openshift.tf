@@ -67,6 +67,11 @@ variable "cluster_id" {
 ###### Provider specific variables
 #########################################
 
+variable "aws_username" {
+    type = "string"
+    description = "Root account username"
+}
+
 variable "aws_resource_group" {
     type        = "string"
     description = "AWS Resource group"

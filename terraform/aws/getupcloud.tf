@@ -1,6 +1,8 @@
 locals {
     getupcloud_api_aws_bucket_name = "${var.prefix}api-${random_string.suffix.result}"
     getupcloud_namespace_backup_aws_bucket_name = "${var.prefix}namespace-backup-${random_string.suffix.result}"
+    iam_user_getupcloud_api = "${var.prefix}api-${random_string.suffix.result}"
+    iam_user_getupcloud_backup = "${var.prefix}namespace-backup-${random_string.suffix.result}"
 }
 
 #################################################################
@@ -8,7 +10,7 @@ locals {
 #################################################################
 
 resource "aws_iam_user" "getupcloud-api" {
-    name = "${var.prefix}api-${random_string.suffix.result}"
+    name = "${local.iam_user_getupcloud_api}"
     path = "/"
 }
 
@@ -47,11 +49,11 @@ resource "aws_s3_bucket" "getupcloud-api" {
 }
 
 #################################################################
-## Getup Namespace Backup
+## Getup Backup
 #################################################################
 
 resource "aws_iam_user" "getupcloud-namespace-backup" {
-    name = "${var.prefix}namespace-backup-${random_string.suffix.result}"
+    name = "${local.iam_user_getupcloud_api}"
     path = "/"
 }
 
@@ -60,16 +62,35 @@ resource "aws_iam_user_policy" "getupcloud-namespace-backup" {
     user   = "${aws_iam_user.getupcloud-namespace-backup.name}"
     policy = <<POLICY
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": [
-        "s3:*"
-      ],
-      "Resource": "arn:aws:s3:::${local.getupcloud_namespace_backup_aws_bucket_name}/*",
-      "Effect": "Allow"
-    }
-  ]
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject",
+                "ec2:DeleteSnapshot",
+                "ec2:ModifySnapshotAttribute",
+                "ec2:CreateTags",
+                "ec2:CreateSnapshot",
+                "iam:GetUser"
+            ],
+            "Resource": [
+                "arn:aws:ec2:*:${data.aws_user.user_id}:volume/*",
+                "arn:aws:ec2:*::snapshot/*",
+                "arn:aws:s3:::${local.getupcloud_namespace_backup_aws_bucket_name}/*",
+                "arn:aws:iam::${data.aws_user.user_id}:user/${aws_iam_user.getupcloud-namespace-backup.name}"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:DescribeVolumes",
+                "iam:GetUser",
+                "ec2:DescribeSnapshots"
+            ],
+            "Resource": "*"
+        }
+    ]
 }
 POLICY
 }

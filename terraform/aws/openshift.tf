@@ -143,6 +143,10 @@ locals {
 ###### Provider specific data sources
 #########################################
 
+data "aws_iam_user" "aws_user" {
+    user_name = "${var.aws_username}"
+}
+
 data "aws_ami" "centos_bastion" {
   most_recent = true
 

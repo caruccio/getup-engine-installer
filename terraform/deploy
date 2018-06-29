@@ -20,7 +20,7 @@ if [ "${PROVIDER}" == azure ]; then
         az account get-access-token &>/dev/null || az login || exit 1
     fi
 elif [ "${PROVIDER}" == aws ]; then
-    export AWS_USERNAME=$(aws iam get-user --query User.UserName --output text)
+    export AWS_USER_ID=$(aws iam get-user --query User.UserId --output text)
 fi
 
 if [ -z "${NAME}" ]; then

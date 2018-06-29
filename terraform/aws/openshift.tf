@@ -67,9 +67,9 @@ variable "cluster_id" {
 ###### Provider specific variables
 #########################################
 
-variable "aws_username" {
+variable "aws_user_id" {
     type = "string"
-    description = "Root account username"
+    description = "Account user id"
 }
 
 variable "aws_resource_group" {
@@ -147,10 +147,6 @@ locals {
 #########################################
 ###### Provider specific data sources
 #########################################
-
-data "aws_iam_user" "aws_user" {
-    user_name = "${var.aws_username}"
-}
 
 data "aws_ami" "centos_bastion" {
   most_recent = true

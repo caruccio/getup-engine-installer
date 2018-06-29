@@ -75,10 +75,10 @@ resource "aws_iam_user_policy" "getupcloud-namespace-backup" {
                 "iam:GetUser"
             ],
             "Resource": [
-                "arn:aws:ec2:*:${data.aws_user_id}:volume/*",
+                "arn:aws:ec2:*:${var.aws_user_id}:volume/*",
                 "arn:aws:ec2:*::snapshot/*",
                 "arn:aws:s3:::${local.getupcloud_namespace_backup_aws_bucket_name}/*",
-                "arn:aws:iam::${data.aws_user_id}:user/${aws_iam_user.getupcloud-namespace-backup.name}"
+                "arn:aws:iam::${var.aws_user_id}:user/${aws_iam_user.getupcloud-namespace-backup.name}"
             ]
         },
         {

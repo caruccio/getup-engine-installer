@@ -140,7 +140,7 @@ variable "ami_app_image_name_filter" {
 
 locals {
     aws_bucket_name = "${var.prefix}registry-${random_string.suffix.result}"
-    aws_zones       = ["${split(" ", var.aws_zones)}"]
+    aws_zones       = ["${split(" ", trimspace(var.aws_zones))}"]
     aws_zones_count = "${length(local.aws_zones)}"
 }
 

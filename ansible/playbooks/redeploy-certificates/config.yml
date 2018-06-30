@@ -1,0 +1,33 @@
+---
+- name: Setup
+  hosts: localhost
+  connection: local
+  become: no
+  gather_facts: no
+  tags:
+    - always
+  roles:
+    - init
+
+- include: /openshift-ansible/playbooks/redeploy-certificates.yml
+  tags:
+    - redeploy-certificates
+
+- name: Update getup routes
+  hosts: oo_first_master
+  tags:
+    - redeploy-certificates
+  tasks:
+    - include_role:
+        name: getup-route
+      vars:
+        name: "{{ item.name }}"
+        host: "{{ item.host }}"
+        service: "{{ item.service }}"
+      with_items:
+        - name: gapi
+          host: "{{ getupcloud_api_endpoint }}"
+          service: api
+        - name: portal
+          host: "{{ getupcloud_portal_endpoint }}"
+          service: console

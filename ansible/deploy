@@ -11,7 +11,7 @@ export ROOT_DIR="$(dirname $0)"
 
 stage=install
 default_stage=install
-STAGES="pre install post getup scale upgrade-control-plane upgrade-nodes uninstall gen-hosts playbook"
+STAGES="pre install post getup scale upgrade-control-plane upgrade-nodes uninstall gen-hosts playbook redeploy-certificates"
 
 function stage_is()
 {
@@ -143,7 +143,11 @@ if stage_is playbook; then
     fi
 
     echo Starting playbook: $playbook_path
-    ansible-playbook -i $HOSTS_FILE $playbook_path ${ansible_args[*]}
+    exec ansible-playbook -i $HOSTS_FILE $playbook_path ${ansible_args[*]}
+fi
+
+if stage_is redeploy-certificates; then
+    exec ansible-playbook -i $HOSTS_FILE playbooks/redeploy-certificates/config.yml ${ansible_args[*]}
 fi
 
 if stage_is upgrade-control-plane || stage_is upgrade-nodes; then

@@ -1,0 +1,20 @@
+---
+- name: "Create route {{ name }}"
+  oc_route:
+    state: present
+    name: "{{ name }}"
+    namespace: "{{ getupcloud_namespace }}"
+    service_name: "{{ service }}"
+    host: "{{ host }}"
+    tls_termination: edge
+    cacert_path: "/etc/origin/master/named_certificates/ca-{{ getupcloud_cluster_zone }}.crt"
+    cert_path: "/etc/origin/master/named_certificates/{{ getupcloud_cluster_zone }}.crt"
+    key_path: "/etc/origin/master/named_certificates/{{ getupcloud_cluster_zone }}.key"
+
+- name: "Update route {{ name }}"
+  oc_edit:
+    kind: routes
+    name: "{{ name }}"
+    namespace: "{{ getupcloud_namespace }}"
+    content:
+      spec.tls.insecureEdgeTerminationPolicy: "Redirect"

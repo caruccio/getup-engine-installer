@@ -127,17 +127,12 @@
     session_affinity: None
     service_type: ClusterIP
 
-- name: Create api route
-  oc_route:
-    state: present
+- include_role:
+    name: getup-route
+  vars:
     name: gapi
-    namespace: "{{ getupcloud_namespace }}"
-    service_name: api
     host: "{{ getupcloud_api_endpoint }}"
-    tls_termination: edge
-    cacert_path: "/etc/origin/master/named_certificates/ca-{{ getupcloud_cluster_zone }}.crt"
-    cert_path: "/etc/origin/master/named_certificates/{{ getupcloud_cluster_zone }}.crt"
-    key_path: "/etc/origin/master/named_certificates/{{ getupcloud_cluster_zone }}.key"
+    service: api
 
 - name: Wait for API to become available
   # Using curl here since the uri module requires python-httplib2 and

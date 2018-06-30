@@ -53,7 +53,7 @@ resource "aws_s3_bucket" "getupcloud-api" {
 #################################################################
 
 resource "aws_iam_user" "getupcloud-namespace-backup" {
-    name = "${local.iam_user_getupcloud_api}"
+    name = "${local.iam_user_getupcloud_backup}"
     path = "/"
 }
 

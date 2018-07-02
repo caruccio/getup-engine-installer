@@ -508,6 +508,21 @@ groups:
       severity: warning
     annotations:
 {% raw %}
-      dscription: To many containers are dying by OOM on {{$labels.source}}
+      description: To many containers are dying by OOM on {{$labels.source}}
       summary: Too many dead containers
 {% endraw %}
+  - alert: NodeDiskUsage
+    expr: sum(container_fs_usage_bytes{device=~"^/dev/(xvd[a-z][a-z]|sd[a-z][1-9])$"}) by (instance, device) / sum(container_fs_limit_bytes{device=~"^/dev/(xvd[a-z][a-z]|sd[a-z][1-9])$"}) by (instance, device) * 100 > 90
+    for: 1m
+    labels:
+      cluster: {{ cluster_name }}
+      service: node
+      severity: critical
+    annotations:
+{% raw %}
+      description: '{{$labels.instance}} ({{$labels.label_type}}): Disk  usage is
+        above 90% (current value is: {{ $value }})'
+      summary: High disk usage detected
+{% endraw %}
+
+  

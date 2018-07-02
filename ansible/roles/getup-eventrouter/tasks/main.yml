@@ -3,6 +3,29 @@
     src: eventrouter.yml.j2
     dest: "eventrouter.yaml"
 
+- name: RBAC | Add template
+  template:
+    src: rbac.yaml.j2
+    dest: "rbac.yaml"
+    
+- name: EventRouter Create Cluster Role
+  oc_obj:
+    state: present
+    namespace: "{{ openshift_prometheus_namespace  }}"
+    kind: ClusterRole
+    name: eventrouter-exporter
+    files:
+      - "rbac.yaml"
+    delete_after: yes
+    
+- name: Assign role to Service Account
+  oc_adm_policy_user:
+    state: present
+    user: "system:serviceaccount:{{ openshift_prometheus_namespace }}:eventrouter-exporter"
+    namespace: "{{ openshift_prometheus_namespace  }}"
+    resource_kind: cluster-role
+    resource_name: cluster-admin
+
 - name: create template
   oc_obj:
     name: eventrouter

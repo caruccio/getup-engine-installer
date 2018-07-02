@@ -1,0 +1,26 @@
+- name: EventRouter | Add template
+  template:
+    src: eventrouter.yml.j2
+    dest: "eventrouter.yaml"
+
+- name: create template
+  oc_obj:
+    name: eventrouter
+    state: present
+    namespace: "{{ openshift_prometheus_namespace }}"
+    kind: template
+    files:
+    - eventrouter.yaml
+  ignore_errors: yes
+
+- name: EventRouter | Create Resources eventrouter
+  oc_process:
+    namespace: "{{ openshift_prometheus_namespace }}"
+    template_name: eventrouter-exporter
+    create: True
+
+
+
+  
+  
+  

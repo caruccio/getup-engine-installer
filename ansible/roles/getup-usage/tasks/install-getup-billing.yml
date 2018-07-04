@@ -80,7 +80,7 @@
 
 - name: Create log dir
   file:
-    path: /var/log/getup-usage
+    path: /var/log/getup-billing
     state: directory
     owner: "{{ ansible_user }}"
     mode: 0750

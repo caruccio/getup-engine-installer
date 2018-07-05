@@ -1,4 +1,5 @@
 ---
+# user databases backup
 - name: Check database-backup cronjob
   command: >
     {{ oc }}
@@ -23,6 +24,7 @@
     --labels 'job=database-backup,provider=aws,storage_type={{ getupcloud_backup_storage_kind }}'
   when: "'database-backup' not in oc_database_backup.stdout"
 
+# volume backup
 - name: Check AWS EBS backup cronjob
   command: >
     {{ oc }}
@@ -45,3 +47,19 @@
     --restart Never
     --labels 'job=aws-ebs-backup,provider=aws,storage_type={{ getupcloud_backup_storage_kind }}'
   when: "'aws-ebs-backup' not in oc_ebs_backup.stdout"
+
+# etcd backup
+- name: Install dependencies
+  pip:
+    name: awscli
+
+- name: Create etcd backup crontab
+  cron:
+    name: "Backup etcd data"
+    user: "root"
+    job: >
+      AWS_ACCESS_KEY_ID={{ getupcloud_backup_storage_s3_accesskey }}
+      AWS_SECRET_ACCESS_KEY={{ getupcloud_backup_storage_s3_secretkey }}
+      AWS_DEFAULT_REGION={{ getupcloud_backup_storage_s3_region }}
+      AWS_BUCKET_NAME={{ getupcloud_backup_storage_s3_bucket }}
+      {{ getupcloud_backup_install_dir }}/etcd-backup {{ openshift_cloudprovider_kind }}

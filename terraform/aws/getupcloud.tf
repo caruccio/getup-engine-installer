@@ -1,8 +1,9 @@
 locals {
-    getupcloud_api_aws_bucket_name = "${var.prefix}api-${random_string.suffix.result}"
-    getupcloud_namespace_backup_aws_bucket_name = "${var.prefix}namespace-backup-${random_string.suffix.result}"
-    iam_user_getupcloud_api = "${var.prefix}api-${random_string.suffix.result}"
-    iam_user_getupcloud_backup = "${var.prefix}namespace-backup-${random_string.suffix.result}"
+    getupcloud_api_bucket_name = "${var.prefix}api-${random_string.suffix.result}"
+    getupcloud_api_iam_user = "${var.prefix}api-${random_string.suffix.result}"
+
+    getupcloud_backup_bucket_name = "${var.prefix}backup-${random_string.suffix.result}"
+    getupcloud_backup_iam_user = "${var.prefix}backup-${random_string.suffix.result}"
 }
 
 #################################################################
@@ -10,12 +11,12 @@ locals {
 #################################################################
 
 resource "aws_iam_user" "getupcloud-api" {
-    name = "${local.iam_user_getupcloud_api}"
+    name = "${local.getupcloud_api_iam_user}"
     path = "/"
 }
 
 resource "aws_iam_user_policy" "getupcloud-api" {
-    name   = "${var.prefix}api-${random_string.suffix.result}"
+    name   = "${local.getupcloud_api_iam_user}"
     user   = "${aws_iam_user.getupcloud-api.name}"
     policy = <<POLICY
 {
@@ -25,7 +26,7 @@ resource "aws_iam_user_policy" "getupcloud-api" {
       "Action": [
         "s3:*"
       ],
-      "Resource": "arn:aws:s3:::${local.getupcloud_api_aws_bucket_name}/*",
+      "Resource": "arn:aws:s3:::${local.getupcloud_api_bucket_name}/*",
       "Effect": "Allow"
     }
   ]
@@ -38,13 +39,13 @@ resource "aws_iam_access_key" "getupcloud-api" {
 }
 
 resource "aws_s3_bucket" "getupcloud-api" {
-    bucket = "${local.getupcloud_api_aws_bucket_name}"
+    bucket = "${local.getupcloud_api_bucket_name}"
     acl    = "public-read"
     force_destroy = true
 
     tags {
         ResourceGroup = "${var.aws_resource_group}"
-        Name = "${local.getupcloud_api_aws_bucket_name}"
+        Name = "${local.getupcloud_api_bucket_name}"
     }
 }
 
@@ -53,12 +54,12 @@ resource "aws_s3_bucket" "getupcloud-api" {
 #################################################################
 
 resource "aws_iam_user" "getupcloud-namespace-backup" {
-    name = "${local.iam_user_getupcloud_backup}"
+    name = "${local.getupcloud_backup_iam_user}"
     path = "/"
 }
 
 resource "aws_iam_user_policy" "getupcloud-namespace-backup" {
-    name   = "${var.prefix}namespace-backup-${random_string.suffix.result}"
+    name   = "${local.getupcloud_backup_iam_user}"
     user   = "${aws_iam_user.getupcloud-namespace-backup.name}"
     policy = <<POLICY
 {
@@ -77,7 +78,7 @@ resource "aws_iam_user_policy" "getupcloud-namespace-backup" {
             "Resource": [
                 "arn:aws:ec2:*:${var.aws_user_id}:volume/*",
                 "arn:aws:ec2:*::snapshot/*",
-                "arn:aws:s3:::${local.getupcloud_namespace_backup_aws_bucket_name}/*",
+                "arn:aws:s3:::${local.getupcloud_backup_bucket_name}/*",
                 "arn:aws:iam::${var.aws_user_id}:user/${aws_iam_user.getupcloud-namespace-backup.name}"
             ]
         },
@@ -100,12 +101,12 @@ resource "aws_iam_access_key" "getupcloud-namespace-backup" {
 }
 
 resource "aws_s3_bucket" "getupcloud-namespace-backup" {
-    bucket = "${local.getupcloud_namespace_backup_aws_bucket_name}"
+    bucket = "${local.getupcloud_backup_bucket_name}"
     acl    = "private"
 
     tags {
         ResourceGroup = "${var.aws_resource_group}"
-        Name = "${local.getupcloud_namespace_backup_aws_bucket_name}"
+        Name = "${local.getupcloud_backup_bucket_name}"
     }
 }
 

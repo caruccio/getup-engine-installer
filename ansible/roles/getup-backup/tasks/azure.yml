@@ -44,3 +44,28 @@
 #    --restart Never
 #    --labels 'job=aws-ebs-backup,provider=azure,storage_type={{ getupcloud_backup_storage_kind }}'
 #  when: 'azure-managed-disk-backup' not in oc_managed_disks_backup.stdout
+
+# etcd backup
+- name: Install dependencies
+  block:
+  - yum:
+      name: "{{ packages }}"
+      enablerepo: "epel"
+    vars:
+      packages:
+        - nodejs
+        - npm
+
+  - npm:
+      global: true
+      name: azure-cli
+
+- name: Create etcd backup crontab
+  cron:
+    name: "Backup etcd data"
+    user: "root"
+    job: >
+      AZURE_STORAGE_ACCOUNT={{ getupcloud_backup_storage_azure_account_name }}
+      AZURE_STORAGE_ACCESS_KEY={{ getupcloud_backup_storage_azure_account_key }}
+      AZURE_CONTAINER={{ getupcloud_backup_storage_azure_container }}
+      {{ getupcloud_backup_install_dir }}/etcd-backup {{ openshift_cloudprovider_kind }}

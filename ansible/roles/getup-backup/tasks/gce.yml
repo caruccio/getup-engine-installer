@@ -23,34 +23,67 @@
 #    --labels 'job=database-backup,provider=aws,storage_type={{ getupcloud_backup_storage_kind }}'
 #  when: "'database-backup' not in oc_database_backup.stdout"
 
-- name: Create GCE Disk backup cronjob
-  block:
-    - oc_secret:
-        state: present
-        name: gce-service-account
-        namespace: "{{ getupcloud_namespace }}"
-        contents:
-          - path: service_account.json
-            data: "{{ lookup('file', getupcloud_backup_gce_service_account_json) | to_json}}"
+# volume backup
+- name: Create GCE service account secret
+  oc_secret:
+    state: present
+    name: gce-service-account
+    namespace: "{{ getupcloud_namespace }}"
+    contents:
+      - path: service_account.json
+        data: "{{ lookup('file', getupcloud_backup_gce_service_account_json) | to_json }}"
 
-    - command: |
-        {{ oc }} delete cronjobs/volume-backup -n "{{ getupcloud_namespace }}"
+- name: Delete old volume-backup cronjob
+  command: |
+    {{ oc }} delete cronjobs/volume-backup -n "{{ getupcloud_namespace }}"
 
-    - command: |
-        {{ oc }} run volume-backup -n "{{ getupcloud_namespace }}"
-        --env 'GOOGLE_APPLICATION_CREDENTIALS=/config/service_account.json'
-        --env 'GOOGLE_ZONE={{ getupcloud_backup_gce_zone }}'
-        --env 'DEFAULT_RETENTION_DAYS={{ getupcloud_backup_retention_days | default(7) | int }}'
-        --image getupcloud/volume-backup:latest
-        --schedule '5 1 * * *'
-        --restart Never
-        --labels 'job=volume-backup,provider=gce'
-        --limits=cpu=100m,memory=256Mi
-        --requests=cpu=100m,memory=256Mi
+- name: Create volume-backup cronjob
+  command: |
+    {{ oc }} run volume-backup -n "{{ getupcloud_namespace }}"
+    --env 'GOOGLE_APPLICATION_CREDENTIALS=/config/service_account.json'
+    --env 'GOOGLE_ZONE={{ getupcloud_backup_gce_zone }}'
+    --env 'DEFAULT_RETENTION_DAYS={{ getupcloud_backup_retention_days | default(7) | int }}'
+    --image getupcloud/volume-backup:latest
+    --schedule '5 1 * * *'
+    --restart Never
+    --labels 'job=volume-backup,provider=gce'
+    --limits=cpu=100m,memory=256Mi
+    --requests=cpu=100m,memory=256Mi
 
-    - command: |
-        {{ oc }} volume cronjob/volume-backup -n "{{ getupcloud_namespace }}"
-        --add --mount-path=/config/
-        --secret-name=gce-service-account --name=service-account
-  when: getupcloud_backup_gce_service_account_json is file
-  with_items: getupcloud_backup_gce_zones
+- name: Add secret to volume-backup cronjob
+  command: |
+    {{ oc }} volume cronjob/volume-backup -n "{{ getupcloud_namespace }}"
+    --add --mount-path=/config/
+    --secret-name=gce-service-account --name=service-account
+
+# etcd backup
+- name: Add Google Cloud SDK yum repository
+  yum_repository:
+    name: Google Cloud SDK
+    baseurl: https://packages.cloud.google.com/yum/repos/cloud-sdk-el7-x86_64
+    enabled: true
+    gpgcheck: true
+    repo_gpgcheck: true
+    gpgkey:
+      - https://packages.cloud.google.com/yum/doc/yum-key.gpg
+      - https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+- name: Install dependencies
+  yum:
+    name: google-cloud-sdk
+
+- name: Copy GCE service account config
+  copy:
+    src: {{ getupcloud_backup_gce_service_account_json }}
+    dest: {{ getupcloud_backup_install_dir }}/service_account.json
+    mode: 0700
+
+- name: Create etcd backup crontab
+  cron:
+    name: "Backup etcd data"
+    user: "root"
+    job: >
+      GOOGLE_APPLICATION_CREDENTIALS={{ getupcloud_backup_install_dir }}/service_account.json
+      GOOGLE_ZONE={{ getupcloud_backup_gce_zone }}
+      GOOGLE_BUCKET_NAME={{ getupcloud_backup_gce_zone }}
+      {{ getupcloud_backup_install_dir }}/etcd-backup {{ openshift_cloudprovider_kind }}

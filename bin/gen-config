@@ -176,7 +176,11 @@ elif provider_is gce; then
     ex OPENSHIFT_MONITORING_STORAGE_TYPE="pvc"
     ex OPENSHIFT_METRICS_STORAGE_KIND="dynamic"
     ex OPENSHIFT_LOGGING_STORAGE_KIND="dynamic"
-    ex INSTALL_BACKUP=false
+    ex INSTALL_BACKUP=true
+    rd GETUPCLOUD_BACKUP_GCE_ZONE
+    ask 'Press ENTER and paste the content of a valid service-account with enough permissions to manage disk snapshots.'
+    cat > $stateDir/gce-service-account.json
+    ex GETUPCLOUD_BACKUP_GCE_SERVICE_ACCOUNT_JSON="/state/gce-service-account.json"
 fi
 
 if ask "Use high performance ($HIGH_PERF_DISK_TYPE) disks where applicable?" ${USE_HIGH_PERF_DISKS:-true}; then

@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [ -e .suffix ]; then
+    export IMAGE_SUFFIX=$(<.suffix)
+    echo IMAGE_SUFFIX=$IMAGE_SUFFIX
+fi
+
 image=getup-engine${IMAGE_SUFFIX}:${1:-v3.9}
 dockerfile=Dockerfile-${1:-v3.9}
 

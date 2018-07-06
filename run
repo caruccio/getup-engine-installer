@@ -9,13 +9,22 @@ if [ $# -lt 1 ]; then
     exit 0
 fi
 
-
-if [ -d "${1}" ]; then
-    state_dir=$(realpath ${1})
-else
-    state_dir=$(realpath ./state/${1})
-fi
+cluster_name=${1}
 shift
+
+if [ -d "${cluster_name}" ]; then
+    state_dir=$(realpath ${cluster_name})
+else
+    state_dir=$(realpath ./state/${cluster_name})
+fi
+
+if [ -e $state_dir/.suffix ]; then
+    export IMAGE_SUFFIX=$(<$state_dir/.suffix)
+    echo IMAGE_SUFFIX=$IMAGE_SUFFIX
+elif [ -e .suffix ]; then
+    export IMAGE_SUFFIX=$(<.suffix)
+    echo IMAGE_SUFFIX=$IMAGE_SUFFIX
+fi
 
 name=${state_dir##*/}
 container_name=getup-engine${IMAGE_SUFFIX}-${name}

@@ -7,7 +7,7 @@ BACKUP_BASENAME="$HOSTNAME-${1##*/}"
 
 echo "--> [Azure] Uploading backup $1 to ${AZURE_STORAGE_ACCOUNT}/${AZURE_CONTAINER}/${BACKUP_BASENAME}"
 
-azure config mode arm
+yes no | azure config mode arm
 azure storage blob upload \
     --account-name ${AZURE_STORAGE_ACCOUNT} \
     --account-key ${AZURE_STORAGE_ACCESS_KEY} \

@@ -20,16 +20,18 @@ resource "aws_iam_user_policy" "getupcloud-api" {
     user   = "${aws_iam_user.getupcloud-api.name}"
     policy = <<POLICY
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": [
-        "s3:*"
-      ],
-      "Resource": "arn:aws:s3:::${local.getupcloud_api_bucket_name}/*",
-      "Effect": "Allow"
-    }
-  ]
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": "s3:*",
+            "Resource": [
+                "arn:aws:s3:::${local.getupcloud_api_bucket_name}/*",
+                "arn:aws:s3:::${local.getupcloud_api_bucket_name}"
+            ]
+        }
+    ]
 }
 POLICY
 }
@@ -66,30 +68,33 @@ resource "aws_iam_user_policy" "getupcloud-namespace-backup" {
     "Version": "2012-10-17",
     "Statement": [
         {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": "iam:GetUser",
+            "Resource": "*"
+        },
+        {
+            "Sid": "VisualEditor1",
             "Effect": "Allow",
             "Action": [
-                "s3:PutObject",
                 "ec2:DeleteSnapshot",
                 "ec2:ModifySnapshotAttribute",
                 "ec2:CreateTags",
-                "ec2:CreateSnapshot",
-                "iam:GetUser"
+                "ec2:CreateSnapshot"
             ],
             "Resource": [
-                "arn:aws:ec2:*:${var.aws_user_id}:volume/*",
-                "arn:aws:ec2:*::snapshot/*",
-                "arn:aws:s3:::${local.getupcloud_backup_bucket_name}/*",
-                "arn:aws:iam::${var.aws_user_id}:user/${aws_iam_user.getupcloud-namespace-backup.name}"
+                "arn:aws:ec2:*:975877104335:volume/*",
+                "arn:aws:ec2:*::snapshot/*"
             ]
         },
         {
+            "Sid": "VisualEditor2",
             "Effect": "Allow",
-            "Action": [
-                "ec2:DescribeVolumes",
-                "iam:GetUser",
-                "ec2:DescribeSnapshots"
-            ],
-            "Resource": "*"
+            "Action": "s3:*",
+            "Resource": [
+                "arn:aws:s3:::${local.getupcloud_backup_bucket_name}/*",
+                "arn:aws:s3:::${local.getupcloud_backup_bucket_name}"
+            ]
         }
     ]
 }

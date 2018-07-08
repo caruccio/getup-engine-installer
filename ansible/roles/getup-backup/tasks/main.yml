@@ -1,7 +1,7 @@
 ---
 - file:
     state: directory
-    src: "{{ getupcloud_backup_install_dir }}"
+    path: "{{ getupcloud_backup_install_dir }}"
 
 - name: Copy etcd-backup scripts
   copy:

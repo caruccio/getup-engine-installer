@@ -64,6 +64,7 @@
   cron:
     name: "Backup etcd data"
     user: "root"
+    minute: 10
     job: >
       AZURE_STORAGE_ACCOUNT={{ getupcloud_backup_storage_azure_account_name }}
       AZURE_STORAGE_ACCESS_KEY={{ getupcloud_backup_storage_azure_account_key }}

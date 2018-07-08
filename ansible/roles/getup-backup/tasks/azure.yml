@@ -16,7 +16,6 @@
     --schedule '30 4 * * *'
     --restart Never
     --labels 'job=database-backup,provider=azure,storage_type={{ getupcloud_backup_storage_kind }}'
-  when: '"database-backup" not in oc_database_backup.stdout'
 
 #- name: Check Azure Managed Disk backup cronjob
 #  command: >

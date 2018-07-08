@@ -1,13 +1,8 @@
 ---
 # user databases backup
-- name: Check database-backup cronjob
-  command: >
-    {{ oc }}
-    get cronjobs/database-backup
-    -n {{ getupcloud_namespace }}
-    -o name
-    --ignore-not-found
-  register: oc_database_backup
+- name: Delete old database-backup cronjob
+  command: |
+    {{ oc }} delete cronjobs/database-backup -n "{{ getupcloud_namespace }}"
 
 - name: Create database-backup cronjob
   command: |

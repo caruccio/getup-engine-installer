@@ -11,7 +11,7 @@ export ROOT_DIR="$(dirname $0)"
 
 stage=install
 default_stage=install
-STAGES="pre install post getup scale upgrade-control-plane upgrade-nodes uninstall gen-hosts playbook redeploy-certificates"
+STAGES="pre install post getup scaleup upgrade-control-plane upgrade-nodes uninstall gen-hosts playbook redeploy-certificates"
 
 function stage_is()
 {
@@ -217,11 +217,11 @@ if stage_is uninstall; then
     exec ansible-playbook -i $HOSTS_FILE /usr/share/ansible/openshift-ansible/playbooks/adhoc/uninstall.yml ${ansible_args[*]}
 fi
 
-if stage_is $default_stage pre scale; then
+if stage_is $default_stage pre scaleup; then
     ansible-playbook -i $HOSTS_FILE playbooks/node/config.yml --tags=pre-install ${ansible_args[*]}
 fi
 
-if stage_is scale; then
+if stage_is scaleup; then
     if [ ! -e $HOSTS_FILE-pre-scale ]; then
         cp -f $HOSTS_FILE $HOSTS_FILE-pre-scale
     fi
@@ -234,7 +234,7 @@ if stage_is $default_stage install; then
     run_stage -i $HOSTS_FILE ${ansible_args[@]}
 fi
 
-if stage_is $default_stage post scale; then
+if stage_is $default_stage post scaleup; then
     ansible-playbook -i $HOSTS_FILE playbooks/node/config.yml --tags=post-install ${ansible_args[*]}
 fi
 

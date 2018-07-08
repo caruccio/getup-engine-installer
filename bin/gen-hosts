@@ -126,6 +126,7 @@ EOF
 
 			getupcloud_backup_gce_zone='${GETUPCLOUD_BACKUP_GCE_ZONE}'
 			getupcloud_backup_gce_service_account_json='${GETUPCLOUD_BACKUP_GCE_SERVICE_ACCOUNT_JSON}'
+			getupcloud_backup_gcs_bucket='${GETUPCLOUD_BACKUP_GCS_BUCKET}'
 EOF
     ;;
 
@@ -189,13 +190,13 @@ for master in ${MASTER_HOSTNAMES}; do
     openshift_host $master
 done
 
-if [ "${stage}" == 'scale' ]; then
+if [ "${stage}" == 'scaleup' ]; then
 
-    OLD_NODES="$(ansible -i $HOSTS --list-hosts nodes | grep -v 'hosts (.*)')"
+    OLD_NODES="$(ansible -i $HOSTS_FILE --list-hosts nodes | grep -v 'hosts (.*)')"
 
     # copy [nodes] from current hosts files
     echo
-    sed -ne '/^\s*\[nodes\]/,/^\[/p' $HOSTS
+    sed -ne '/^\s*\[nodes\]/,/^\[/p' $HOSTS_FILE
 
     echo Searching for new nodes >&2
     echo

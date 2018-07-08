@@ -1,4 +1,19 @@
 ---
+- file:
+    state: directory
+    path: "{{ getupcloud_backup_install_dir }}"
+
+- name: Copy etcd-backup scripts
+  copy:
+    src: "{{ item }}"
+    dest: "{{ getupcloud_backup_install_dir }}/{{ item }}"
+    mode: 0755
+  with_items:
+   - etcd-backup
+   - upload-{{ openshift_cloudprovider_kind }}
+
+# crontab is created by provider specific tasks below
+
 - import_tasks: aws.yml
   when:
     - openshift_cloudprovider_kind is defined and openshift_cloudprovider_kind == "aws"
@@ -10,3 +25,4 @@
 - import_tasks: gce.yml
   when:
     - openshift_cloudprovider_kind is defined and openshift_cloudprovider_kind == "gce"
+    - getupcloud_backup_gce_service_account_json is file

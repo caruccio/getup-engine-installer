@@ -1,0 +1,16 @@
+#!/bin/bash
+
+AZURE_STORAGE_ACCOUNT="${AZURE_STORAGE_ACCOUNT}"
+AZURE_STORAGE_ACCESS_KEY="${AZURE_STORAGE_ACCESS_KEY}"
+AZURE_CONTAINER="${AZURE_CONTAINER:-getupcloud-cluster-backup}"
+BACKUP_BASENAME="$HOSTNAME-${1##*/}"
+
+echo "--> [Azure] Uploading backup $1 to ${AZURE_STORAGE_ACCOUNT}/${AZURE_CONTAINER}/${BACKUP_BASENAME}"
+
+azure config mode arm
+azure storage blob upload \
+    --account-name ${AZURE_STORAGE_ACCOUNT} \
+    --account-key ${AZURE_STORAGE_ACCESS_KEY} \
+    --container ${AZURE_CONTAINER} \
+    --file ${1} \
+    --blob ${BACKUP_BASENAME}

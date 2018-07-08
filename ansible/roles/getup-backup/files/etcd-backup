@@ -1,0 +1,40 @@
+#!/bin/bash
+
+set -eu
+
+PROVIDER=${1}
+TIMESTAMP=$(date --rfc-3339=seconds|tr -s ' ' _)
+BACKUP_ROOT=/tmp/cluster-backup-${TIMESTAMP}
+BACKUP_DIR=${BACKUP_ROOT}/etcd-backup-${TIMESTAMP}
+BACKUP_FILE=${BACKUP_DIR}/etcd-backup-${TIMESTAMP}.tar.gz
+
+cleanup()
+{
+    echo "--> Cleaning $BACKUP_ROOT"
+    rm -rf $BACKUP_ROOT
+}
+
+warn()
+{
+    echo "--> Upload failed"
+    echo "--> Backup files still in $BACKUP_ROOT"
+}
+
+trap cleanup EXIT
+
+echo "--> Started" `date`
+echo "--> Generating etcd backup to ${BACKUP_FILE}"
+
+mkdir -p $BACKUP_ROOT
+chmod 700 -R $BACKUP_ROOT
+
+etcdctl backup --data-dir /var/lib/etcd --backup-dir $BACKUP_DIR/etcd
+#rsync --recursive /etc/origin/master $BACKUP_DIR/
+#rsync --recursive /etc/origin/node $BACKUP_DIR/
+
+cd $BACKUP_DIR
+tar czvf $BACKUP_FILE etcd
+
+source ${0%/*}/upload-${PROVIDER} ${BACKUP_FILE} || trap warn EXIT
+
+echo "--> Finished" `date`

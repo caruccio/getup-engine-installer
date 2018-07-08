@@ -1,4 +1,5 @@
 ---
+# user databases backup
 - name: Check database-backup cronjob
   command: >
     {{ oc }}
@@ -18,15 +19,16 @@
     --env 'AWS_S3_BUCKET_NAME={{ getupcloud_backup_storage_s3_bucket | default("") }}'
     --env 'NAMESPACE={{ getupcloud_namespace }}'
     --image 'getupcloud/database-backup:latest'
-    --schedule '5 2 * * *'
+    --schedule '30 4 * * *'
     --restart Never
     --labels 'job=database-backup,provider=aws,storage_type={{ getupcloud_backup_storage_kind }}'
   when: "'database-backup' not in oc_database_backup.stdout"
 
+# volume backup
 - name: Check AWS EBS backup cronjob
   command: >
     {{ oc }}
-    get cronjobs/aws-ebs-backup
+    get cronjobs/volume-backup
     -n {{ getupcloud_namespace }}
     -o name
     --ignore-not-found
@@ -34,14 +36,31 @@
 
 - name: Create AWS EBS backup cronjob
   command: |
-    oc run aws-ebs-backup
+    oc run volume-backup
     -n "{{ getupcloud_namespace }}"
     --env 'AWS_ACCESS_KEY_ID={{ getupcloud_backup_storage_s3_accesskey | default("") }}'
     --env 'AWS_SECRET_ACCESS_KEY={{ getupcloud_backup_storage_s3_secretkey | default("") }}'
     --env 'AWS_DEFAULT_REGION={{ getupcloud_backup_storage_s3_region | default("") }}'
     --env 'DEFAULT_RETENTION_DAYS={{ getupcloud_backup_retention_days | default(7) | int }}'
     --image getupcloud/aws-volume-snapshot:latest
-    --schedule '5 1 * * *'
+    --schedule '20 4 * * *'
     --restart Never
-    --labels 'job=aws-ebs-backup,provider=aws,storage_type={{ getupcloud_backup_storage_kind }}'
-  when: "'aws-ebs-backup' not in oc_ebs_backup.stdout"
+    --labels 'job=volume-backup,provider=aws,storage_type={{ getupcloud_backup_storage_kind }}'
+  when: "'volume-backup' not in oc_ebs_backup.stdout"
+
+# etcd backup
+- name: Install dependencies
+  pip:
+    name: awscli
+
+- name: Create etcd backup crontab
+  cron:
+    name: "Backup etcd data"
+    user: "root"
+    minute: 10
+    job: >
+      AWS_ACCESS_KEY_ID={{ getupcloud_backup_storage_s3_accesskey }}
+      AWS_SECRET_ACCESS_KEY={{ getupcloud_backup_storage_s3_secretkey }}
+      AWS_DEFAULT_REGION={{ getupcloud_backup_storage_s3_region }}
+      AWS_S3_BUCKET_NAME={{ getupcloud_backup_storage_s3_bucket }}
+      {{ getupcloud_backup_install_dir }}/etcd-backup {{ openshift_cloudprovider_kind }}

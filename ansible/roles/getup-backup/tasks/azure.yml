@@ -2,7 +2,7 @@
 # user databases backup
 - name: Delete old database-backup cronjob
   command: |
-    {{ oc }} delete cronjobs/database-backup -n "{{ getupcloud_namespace }}"
+    {{ oc }} delete --ignore-not-found cronjobs/database-backup -n "{{ getupcloud_namespace }}"
 
 - name: Create database-backup cronjob
   command: >

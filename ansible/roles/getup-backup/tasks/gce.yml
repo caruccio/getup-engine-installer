@@ -60,6 +60,7 @@
   yum_repository:
     name: Google Cloud SDK
     baseurl: https://packages.cloud.google.com/yum/repos/cloud-sdk-el7-x86_64
+    description: "Google Cloud SDK"
     enabled: true
     gpgcheck: true
     repo_gpgcheck: true

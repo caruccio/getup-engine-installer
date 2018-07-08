@@ -49,6 +49,8 @@
 - name: Install dependencies
   block:
   - yum:
+      name: epel-release
+  - yum:
       name: "{{ packages }}"
       enablerepo: "epel"
     vars:

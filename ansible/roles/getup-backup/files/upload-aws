@@ -1,11 +1,10 @@
 #!/bin/bash
 
-export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
+set -eu
+
 export AWS_S3_BUCKET_NAME="${AWS_S3_BUCKET_NAME:-getupcloud-cluster-backup}"
-BACKUP_BASENAME="$HOSTNAME-${1##*/}"
+BACKUP_BASENAME="cluster/$HOSTNAME-${1##*/}"
 
-echo "--> [AWS] Uploading backup $1 to ${AWS_S3_BUCKET_NAME}/cluster/${BACKUP_BASENAME}"
+echo "--> [AWS] Uploading backup $1 to ${AWS_S3_BUCKET_NAME}/${BACKUP_BASENAME}"
 
-aws s3 cp $1 s3://${AWS_S3_BUCKET_NAME}/cluster/${BACKUP_BASENAME}
+aws s3 cp $1 s3://${AWS_S3_BUCKET_NAME}/${BACKUP_BASENAME}

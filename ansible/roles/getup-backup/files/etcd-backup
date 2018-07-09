@@ -35,6 +35,6 @@ etcdctl backup --data-dir /var/lib/etcd --backup-dir $BACKUP_DIR/etcd
 cd $BACKUP_DIR
 tar czvf $BACKUP_FILE etcd
 
-source ${0%/*}/upload-${PROVIDER} ${BACKUP_FILE} || trap warn EXIT
+bash -c ${0%/*}/upload-${PROVIDER} ${BACKUP_FILE} || trap warn EXIT
 
 echo "--> Finished" `date`

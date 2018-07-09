@@ -3,15 +3,15 @@
     - oc_serviceaccount:
         state: present
         name: image-pruner
-        namespace: "{{ openshift_imagepruner_namespace  }}"
+        namespace: "{{ getupcloud_namespace }}"
         secrets:
           - image-pruner
 
 - name: Assign role to Service Account
   oc_adm_policy_user:
     state: present
-    user: "system:serviceaccount:{{ openshift_imagepruner_namespace }}:image-pruner"
-    namespace: "{{ openshift_imagepruner_namespace  }}"
+    user: "system:serviceaccount:{{ getupcloud_namespace }}:image-pruner"
+    namespace: "{{ getupcloud_namespace }}"
     resource_kind: cluster-role
     resource_name: cluster-admin
 
@@ -23,12 +23,9 @@
 - name: Create CronJob for image pruner
   oc_obj:
     state: present
-    namespace: "{{  openshift_imagepruner_namespace }}"
+    namespace: "{{ getupcloud_namespace }}"
     kind: CronJob
     name: image-pruner
     files:
       - "imagepruner.yml"
     delete_after: yes
-  
-  
-  

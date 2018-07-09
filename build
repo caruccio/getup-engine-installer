@@ -5,10 +5,16 @@ if [ -e .suffix ]; then
     echo IMAGE_SUFFIX=$IMAGE_SUFFIX
 fi
 
+if [ -z "$RELEASE" -a -d .git ]; then
+    export RELEASE=$(git log --pretty=format:"%h" -n 1)
+else
+    export RELEASE=devel
+fi
+
 image=getup-engine${IMAGE_SUFFIX}:${1:-v3.9}
 dockerfile=Dockerfile-${1:-v3.9}
 
 echo "---> Building $image from $dockerfile"
 
 [ "${NO_PULL}" != 1 ] && git pull
-sudo docker build . -t $image -f $dockerfile
+sudo docker build . -t $image -f $dockerfile --build-arg RELEASE=$RELEASE

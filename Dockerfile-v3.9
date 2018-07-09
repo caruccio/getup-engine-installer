@@ -2,6 +2,8 @@ FROM openshift/origin-ansible:v3.9
 
 USER root
 
+ARG RELEASE
+
 ENV PACKER_VERSION=1.2.3 \
     TERRAFORM_VERSION=0.11.3 \
     TARGET_OPENSHIFT_RELEASE=v3.9 \
@@ -53,7 +55,8 @@ RUN cd / && for i in /getup-engine/ansible/patches/*.diff; do patch -p0 < $i; do
 ADD bin/ /getup-engine/bin/
 
 RUN chmod -R go+rw /getup-engine && \
-    chmod -R +x /getup-engine/bin/
+    chmod -R +x /getup-engine/bin/ && \
+    echo $RELEASE > /getup-engine/release
 
 USER 1000
 

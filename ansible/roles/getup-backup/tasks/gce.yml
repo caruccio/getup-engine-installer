@@ -51,21 +51,11 @@
     --secret-name=gce-service-account --name=service-account
 
 # etcd backup
-- name: Add Google Cloud SDK yum repository
-  yum_repository:
-    name: Google Cloud SDK
-    baseurl: https://packages.cloud.google.com/yum/repos/cloud-sdk-el7-x86_64
-    description: "Google Cloud SDK"
-    enabled: true
-    gpgcheck: true
-    repo_gpgcheck: true
-    gpgkey:
-      - https://packages.cloud.google.com/yum/doc/yum-key.gpg
-      - https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-
-- name: Install dependencies
-  yum:
-    name: google-cloud-sdk
+- name: Create virtualenv
+  command: |
+    virtualenv "{{ getupcloud_backup_install_dir }}/.env" &&
+    source "{{ getupcloud_backup_install_dir }}/.env/bin/activate" &&
+    pip install google-cloud-storage
 
 - name: Copy GCE service account config
   copy:

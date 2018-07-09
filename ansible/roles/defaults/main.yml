@@ -119,6 +119,3 @@ openshift_grafana_memory_requests: null
 openshift_grafana_memory_limit: null
 openshift_grafana_cpu_requests: null
 openshift_grafana_cpu_limit: null
-
-#imagepruner
-openshift_imagepruner_namespace: "default"

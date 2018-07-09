@@ -5,8 +5,8 @@ metadata:
   labels:
     role: pruner
 spec:
-  schedule: "00 */3 * * *"  
-  jobTemplate:             
+  schedule: "0 */3 * * *"
+  jobTemplate:
     spec:
       template:
         metadata:
@@ -26,6 +26,13 @@ spec:
                 value: "10"
               - name: KEEP_YOUNGER
                 value: "192h"
+            resouces:
+              requests:
+                cpu: 10m
+                memory: 128Mi
+              limits:
+                cpu: 100m
+                memory: 512Mi
           restartPolicy: Never
           serviceAccount: image-pruner
           nodeSelector:

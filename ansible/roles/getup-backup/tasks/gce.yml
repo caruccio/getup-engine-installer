@@ -52,7 +52,7 @@
 
 # etcd backup
 - name: Create virtualenv
-  command: |
+  shell: |
     virtualenv "{{ getupcloud_backup_install_dir }}/.env" &&
     source "{{ getupcloud_backup_install_dir }}/.env/bin/activate" &&
     pip install google-cloud-storage

@@ -77,9 +77,8 @@
   cron:
     name: "Backup etcd data"
     user: "root"
-    minute: 10
+    special_time: hourly
     job: >
       GOOGLE_APPLICATION_CREDENTIALS={{ getupcloud_backup_install_dir }}/service_account.json
-      GOOGLE_ZONE={{ getupcloud_backup_gce_zone }}
       GOOGLE_BUCKET_NAME={{ getupcloud_backup_gcs_bucket }}
       {{ getupcloud_backup_install_dir }}/etcd-backup {{ openshift_cloudprovider_kind }}

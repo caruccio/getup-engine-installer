@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
+
+activate_this = '/'.join(__file__.split('/')[:-1] + ['.env', 'bin', 'activate_this.py'])
+print('Activating environment {}'.format(activate_this))
+execfile(activate_this, dict(__file__=activate_this))
+
 import sys, os, json
 
 assert len(sys.argv) > 1

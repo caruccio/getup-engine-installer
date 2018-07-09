@@ -2,6 +2,7 @@
 
 set -eu
 
+ROOT_DIR=${0%/*}
 PROVIDER=${1}
 TIMESTAMP=$(date --rfc-3339=seconds|tr -s ' ' _)
 BACKUP_ROOT=/tmp/cluster-backup-${TIMESTAMP}
@@ -35,6 +36,6 @@ etcdctl backup --data-dir /var/lib/etcd --backup-dir $BACKUP_DIR/etcd
 cd $BACKUP_DIR
 tar czvf $BACKUP_FILE etcd
 
-bash -c ${0%/*}/upload-${PROVIDER} ${BACKUP_FILE} || trap warn EXIT
+bash -c "${ROOT_DIR}/upload-${PROVIDER} ${BACKUP_FILE}" || trap warn EXIT
 
 echo "--> Finished" `date`

@@ -6,6 +6,6 @@ export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
 export AWS_S3_BUCKET_NAME="${AWS_S3_BUCKET_NAME:-getupcloud-cluster-backup}"
 BACKUP_BASENAME="$HOSTNAME-${1##*/}"
 
-echo "--> [AWS] Uploading backup $1 to ${AWS_S3_BUCKET_NAME}/${BACKUP_BASENAME}"
+echo "--> [AWS] Uploading backup $1 to ${AWS_S3_BUCKET_NAME}/cluster/${BACKUP_BASENAME}"
 
-aws s3 cp $1 s3://${AWS_S3_BUCKET_NAME}/${BACKUP_BASENAME}
+aws s3 cp $1 s3://${AWS_S3_BUCKET_NAME}/cluster/${BACKUP_BASENAME}

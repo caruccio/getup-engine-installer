@@ -5,7 +5,7 @@ AZURE_STORAGE_ACCESS_KEY="${AZURE_STORAGE_ACCESS_KEY}"
 AZURE_CONTAINER="${AZURE_CONTAINER:-getupcloud-cluster-backup}"
 BACKUP_BASENAME="$HOSTNAME-${1##*/}"
 
-echo "--> [Azure] Uploading backup $1 to ${AZURE_STORAGE_ACCOUNT}/${AZURE_CONTAINER}/${BACKUP_BASENAME}"
+echo "--> [Azure] Uploading backup $1 to ${AZURE_STORAGE_ACCOUNT}/cluster/${AZURE_CONTAINER}/${BACKUP_BASENAME}"
 
 yes no | azure config mode arm
 azure storage blob upload \
@@ -13,4 +13,4 @@ azure storage blob upload \
     --account-key ${AZURE_STORAGE_ACCESS_KEY} \
     --container ${AZURE_CONTAINER} \
     --file ${1} \
-    --blob ${BACKUP_BASENAME}
+    --blob /cluster/${BACKUP_BASENAME}

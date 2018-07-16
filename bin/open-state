@@ -1,0 +1,9 @@
+#!/bin/bash
+
+state_dir=${1:-$state_dir}
+
+if ! [ -d ${state_dir} ]; then
+    echo Unable to open state dir: $state_dir
+fi
+
+echo Opening state dir $state_dir

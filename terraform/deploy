@@ -21,6 +21,24 @@ if [ "${PROVIDER}" == azure ]; then
     fi
 elif [ "${PROVIDER}" == aws ]; then
     export AWS_USER_ID=$(aws iam get-user --query User.UserId --output text)
+
+    AWS_S3_BUCKET_NAME=${STATE_BACKEND#s3://} \
+	    envsubst < /getup-engine/state-backend/$PROVIDER-backend.tf.in > $STATE_DIR/$PROVIDER-backend.tf
+    ln -fs $STATE_DIR/$PROVIDER-backend.tf /getup-engine/terraform/$PROVIDER/backend.tf
+
+    if ! aws s3 ls ${STATE_BACKEND} &>/dev/null; then
+        echo Creating state backend $STATE_BACKEND
+        aws s3 mb ${STATE_BACKEND}
+        sleep 5
+        aws s3api put-bucket-versioning --bucket ${STATE_BACKEND#s3://} --versioning-configuration Status=Enabled
+        ( cd /getup-engine/terraform/$PROVIDER && ${TERRAFORM_BIN} init )
+        if [ -e $STATE_DIR/terraform.tfstate ]; then
+            terraform state push $STATE_DIR/terraform.tfstate
+            mv $STATE_DIR/terraform.tfstate $STATE_DIR/terraform.tfstate.backup
+        fi
+    else
+        ( cd /getup-engine/terraform/$PROVIDER && ${TERRAFORM_BIN} init )
+    fi
 fi
 
 if [ -z "${NAME}" ]; then
@@ -87,12 +105,12 @@ if [ $destroy == 1 ]; then
     if [ $assume_yes == 1 ]; then
         opts="$opts -force"
     fi
-    exec ${TERRAFORM_BIN} destroy -var-file=${STATE_DIR}/terraform.tfvars ${opts} -state=${STATE_DIR}/terraform.tfstate
+    exec ${TERRAFORM_BIN} destroy -var-file=${STATE_DIR}/terraform.tfvars ${opts}
 fi
 
 if [ $no_plan == 0 ]; then
     echo "Planning... [$plan]"
-    ${TERRAFORM_BIN} plan -var-file=${STATE_DIR}/terraform.tfvars ${opts} -out=${plan} -state=${STATE_DIR}/terraform.tfstate
+    ${TERRAFORM_BIN} plan -var-file=${STATE_DIR}/terraform.tfvars ${opts} -out=${plan}
 fi
 
 if [ $assume_no == 1 ]; then
@@ -110,12 +128,14 @@ if [ $dry_run == 1 ]; then
     exit 0
 fi
 
+trap save-state EXIT
+
 echo Applying...
-${TERRAFORM_BIN} apply -state-out=${STATE_DIR}/terraform.tfstate ${plan} ${opts}
+${TERRAFORM_BIN} apply ${plan} ${opts}
 ret=$?
 
 echo Converting output
-${TERRAFORM_BIN} output -json -state=${STATE_DIR}/terraform.tfstate | /getup-engine/terraform/json2env > $STATE_DIR/terraform-out.env
+${TERRAFORM_BIN} output -json | /getup-engine/terraform/json2env > $STATE_DIR/terraform-out.env
 
 if [ $ret -eq 0 -a $scale_infra -gt 0 ]; then
     echo Updating state: INFRA_COUNT=$INFRA_COUNT

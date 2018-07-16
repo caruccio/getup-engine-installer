@@ -42,6 +42,8 @@ RUN sed -ie \
 
 ADD images/ /getup-engine/images
 ADD terraform/ /getup-engine/terraform
+ADD state-backend/ /getup-engine/state-backend
+
 
 RUN for provider in /getup-engine/terraform/*/ /getup-engine/images/azure/; \
     do cd $provider && terraform init || exit 1; done

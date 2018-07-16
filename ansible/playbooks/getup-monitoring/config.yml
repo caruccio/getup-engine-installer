@@ -29,6 +29,15 @@
     - include_role:
         name: getup-eventrouter
 
+- name: Kubestate
+  hosts: oo_first_master
+  gather_facts: no
+  tags:
+    - getup-monitoring
+  tasks:
+    - include_role:
+        name: getup-kubestate
+
 - name: Prometheus/Grafana Integration
   hosts: oo_first_master
   gather_facts: no

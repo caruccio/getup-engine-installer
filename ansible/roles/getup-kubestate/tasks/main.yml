@@ -13,16 +13,16 @@
     state: present
     namespace: "{{ openshift_prometheus_namespace  }}"
     kind: ClusterRole
-    name: kubestate
+    name: kubestate-exporter
     files:
       - "rbac.yaml"
     delete_after: yes
-  ignore_errors:yes
+  ignore_errors: yes
     
 - name: Assign role to Service Account
   oc_adm_policy_user:
     state: present
-    user: "system:serviceaccount:{{ openshift_prometheus_namespace }}:kubestate"
+    user: "system:serviceaccount:{{ openshift_prometheus_namespace }}:kubestate-exporter"
     namespace: "{{ openshift_prometheus_namespace  }}"
     resource_kind: cluster-role
     resource_name: cluster-admin

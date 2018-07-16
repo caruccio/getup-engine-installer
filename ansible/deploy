@@ -48,6 +48,7 @@ if ! stage_is $default_stage $STAGES; then
     exit 1
 fi
 
+trap save-state EXIT
 echo "Running stage: $stage"
 echo "Ansible args: ${ansible_args[*]}"
 

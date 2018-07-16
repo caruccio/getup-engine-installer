@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -eu
+
+trap "echo WARNING: state not sync to backend" ERR
+
+echo Saving state dir $STATE_DIR to ${PROVIDER^^} $STATE_BACKEND
+
+if [ $PROVIDER == aws -a -n "${STATE_BACKEND}" ]; then
+    aws s3 sync --exclude '*.terraform/*' $STATE_DIR $STATE_BACKEND/state/
+fi

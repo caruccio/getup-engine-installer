@@ -76,7 +76,11 @@ fi
 
 sudo chgrp -R $(id -g) ${state_dir}
 
+bin/open-state ${state_dir}
+
 echo "---> Starting container ${container_name} from image $image"
+trap "$PWD/bin/close-state ${state_dir}" EXIT
+
 sudo docker run -it --rm $@ \
     -v ${state_dir}/:/state \
     --env-file ${state_dir}/getupengine.env \

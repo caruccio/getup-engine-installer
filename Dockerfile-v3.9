@@ -6,7 +6,11 @@ ENV PACKER_VERSION=1.2.3 \
     TERRAFORM_VERSION=0.11.3 \
     TARGET_OPENSHIFT_RELEASE=v3.9 \
     TARGET_OPENSHIFT_VERSION=3.9.0 \
-    PATH=/getup-engine/bin/:$PATH
+    PATH=/getup-engine/bin/:$PATH \
+    PACKER_BIN=/getup-engine/bin/packer \
+    TERRAFORM_BIN=/getup-engine/bin/terraform \
+    ANSIBLE_BIN=/usr/bin/ansible \
+    ANSIBLE_PLAYBOOK_BIN=/usr/bin/ansible-playbook
 
 COPY yum.repos.d/*.repo /etc/yum.repos.d/
 

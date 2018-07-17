@@ -1,0 +1,21 @@
+#!/bin/bash
+
+if [ "$PROVIDER" == aws ]; then
+    AWS_S3_BUCKET_NAME=${STATE_BACKEND#s3://} \
+	    envsubst < /getup-engine/state-backend/$PROVIDER-backend.tf.in > $STATE_DIR/$PROVIDER-backend.tf
+    ln -fs $STATE_DIR/$PROVIDER-backend.tf /getup-engine/terraform/$PROVIDER/backend.tf
+
+    if ! aws s3 ls ${STATE_BACKEND} &>/dev/null; then
+        echo Creating state backend $STATE_BACKEND
+        aws s3 mb ${STATE_BACKEND}
+        sleep 5
+        aws s3api put-bucket-versioning --bucket ${STATE_BACKEND#s3://} --versioning-configuration Status=Enabled
+        ( cd /getup-engine/terraform/$PROVIDER && ${TERRAFORM_BIN} init )
+        if [ -e $STATE_DIR/terraform.tfstate ]; then
+            terraform state push $STATE_DIR/terraform.tfstate
+            mv $STATE_DIR/terraform.tfstate $STATE_DIR/terraform.tfstate.backup
+        fi
+    else
+        ( cd /getup-engine/terraform/$PROVIDER && ${TERRAFORM_BIN} init )
+    fi
+fi

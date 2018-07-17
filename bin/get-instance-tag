@@ -9,7 +9,11 @@ except ValueError:
     print("Usage: %s instance-name tag-name" % sys.argv[0], file=sys.stderr)
     sys.exit(1)
 
-state = json.load(open(os.environ.get('STATE_DIR', '/state') + '/terraform.tfstate'))
+try:
+    state = json.load(open(os.environ.get('STATE_DIR', '/state') + '/terraform.tfstate'))
+except IOError:
+    state = json.load(sys.stdin)
+
 resources = state['modules'][0]['resources']
 aws_instances = filter(lambda x: x.startswith('aws_instance.'), resources.keys())
 

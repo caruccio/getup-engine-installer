@@ -1,11 +1,13 @@
 #!/bin/bash
 
+source /etc/profile.d/etcdctl.sh
+
 set -eu
 
 ROOT_DIR=${0%/*}
 PROVIDER=${1}
-TIMESTAMP=$(date --rfc-3339=seconds|tr -s ' ' _)
-BACKUP_ROOT=/tmp/cluster-backup-${TIMESTAMP}
+TIMESTAMP=$(date +%Y%m%d-%H%M%S-%Z)
+BACKUP_ROOT=$(mktemp -d /tmp/cluster-backup-XXXXXX)
 BACKUP_DIR=${BACKUP_ROOT}/etcd-backup-${TIMESTAMP}
 BACKUP_FILE=${BACKUP_DIR}/etcd-backup-${TIMESTAMP}.tar.gz
 
@@ -26,15 +28,15 @@ trap cleanup EXIT
 echo "--> Started" `date`
 echo "--> Generating etcd backup to ${BACKUP_FILE}"
 
-mkdir -p $BACKUP_ROOT
-chmod 700 -R $BACKUP_ROOT
+mkdir -p $BACKUP_DIR
 
-etcdctl backup --data-dir /var/lib/etcd --backup-dir $BACKUP_DIR/etcd
-#rsync --recursive /etc/origin/master $BACKUP_DIR/
-#rsync --recursive /etc/origin/node $BACKUP_DIR/
+etcdctl3 snapshot save $BACKUP_DIR/db
+rsync --recursive /etc/etcd $BACKUP_DIR
+rsync --recursive /etc/origin/master $BACKUP_DIR
+rsync --recursive /etc/origin/node $BACKUP_DIR
 
 cd $BACKUP_DIR
-tar czvf $BACKUP_FILE etcd
+tar czvf $BACKUP_FILE db */ --atime-preserve --preserve-permissions
 
 bash -c "${ROOT_DIR}/upload-${PROVIDER} ${BACKUP_FILE}" || trap warn EXIT
 

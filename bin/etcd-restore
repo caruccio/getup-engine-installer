@@ -1,0 +1,30 @@
+#!/bin/bash
+
+read -p "Must run from master node(s). Press [ENTER] to continue. "
+
+set -e
+
+source /etc/profile.d/etcdctl.sh
+
+set -ux
+
+DB=${1}
+
+systemctl stop etcd.service
+
+mv /var/lib/etcd /var/lib/etcd-restored.$(date +%Y%M%d-%H%M%S-%Z) || true
+
+ADDR=$(host $HOSTNAME | awk '{print $4}')
+
+etcdctl3 snapshot restore $DB \
+    --data-dir /var/lib/etcd \
+    --name $HOSTNAME \
+    --initial-cluster "$HOSTNAME=https://$ADDR:2380" \
+    --initial-cluster-token "etcd-cluster-1" \
+    --initial-advertise-peer-urls https://$ADDR:2380
+
+chown -R etcd.etcd /var/lib/etcd/
+
+restorecon -Rv /var/lib/etcd
+
+systemctl start etcd

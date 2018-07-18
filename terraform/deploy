@@ -9,37 +9,20 @@ export ROOT_DIR="$(dirname $0)"
 echo Sourcing $STATE_DIR/getupengine.env
 source $STATE_DIR/getupengine.env
 
-if [ -z "${PROVIDER}" -o ! -d "${ROOT_DIR}/${PROVIDER}" ]; then
-    echo Missing or unknown provider $PROVIDER
-    exit 1
-fi
-
 if [ "${PROVIDER}" == azure ]; then
     echo Checking if Azure is logged in...
     if ! az account show 2>/dev/null | grep -q .; then
         az account get-access-token &>/dev/null || az login || exit 1
     fi
 elif [ "${PROVIDER}" == aws ]; then
+    echo Retrieving AWS IAM UserId
     export AWS_USER_ID=$(aws iam get-user --query User.UserId --output text)
-
-    AWS_S3_BUCKET_NAME=${STATE_BACKEND#s3://} \
-	    envsubst < /getup-engine/state-backend/$PROVIDER-backend.tf.in > $STATE_DIR/$PROVIDER-backend.tf
-    ln -fs $STATE_DIR/$PROVIDER-backend.tf /getup-engine/terraform/$PROVIDER/backend.tf
-
-    if ! aws s3 ls ${STATE_BACKEND} &>/dev/null; then
-        echo Creating state backend $STATE_BACKEND
-        aws s3 mb ${STATE_BACKEND}
-        sleep 5
-        aws s3api put-bucket-versioning --bucket ${STATE_BACKEND#s3://} --versioning-configuration Status=Enabled
-        ( cd /getup-engine/terraform/$PROVIDER && ${TERRAFORM_BIN} init )
-        if [ -e $STATE_DIR/terraform.tfstate ]; then
-            terraform state push $STATE_DIR/terraform.tfstate
-            mv $STATE_DIR/terraform.tfstate $STATE_DIR/terraform.tfstate.backup
-        fi
-    else
-        ( cd /getup-engine/terraform/$PROVIDER && ${TERRAFORM_BIN} init )
-    fi
+else
+    echo Missing or unknown provider $PROVIDER
+    exit 1
 fi
+
+source setup-state-backup
 
 if [ -z "${NAME}" ]; then
     echo 'Missing deploy name'

@@ -169,7 +169,6 @@ function server_name()
 
     if [ $PROVIDER == aws ]; then
         if ! [ -e /tmp/terraform.tfstate ]; then
-            echo pulling state...
             ( cd /getup-engine/terraform/aws && ${TERRAFORM_BIN} state pull > /tmp/terraform.tfstate )
         fi
         /getup-engine/bin/get-instance-tag $privateName Name < /tmp/terraform.tfstate || echo ${privateName%%.*}

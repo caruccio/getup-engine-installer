@@ -42,24 +42,26 @@ def print_list(k, v):
 def print_assoc(k, v):
     print('{}{}="{}"'.format(prefix, k.upper(), ' '.join({ '{}={}'.format(i, j) for i, j in v })))
 
-for k, v in data.items():
+def print_item(data):
+    for k, v in data.items():
 
-    if isinstance(v, (int, str, float)):
-        print_literal(k, v)
-        continue
-    elif v is None:
-        if print_null:
-            print_literal(k, print_null)
-        continue
+        if isinstance(v, (int, str, float)):
+            print_literal(k, v)
+            continue
+        elif v is None:
+            if print_null:
+                print_literal(k, print_null)
+            continue
 
-    v = v['value'] if 'value' in v else v
-    v = v['values'] if 'values' in v else v
-    v = v['item'] if 'item' in v else v
-    v = v['items'] if 'items' in v else v
+        if isinstance(v, (list, tuple)):
+            print_list(k, v)
+        elif isinstance(v, (dict, set)):
+            found = list(filter(lambda i: v.get(i), ['value', 'values', 'item', 'items']))
+            if found:
+                print_item({k: v[found[0]]})
+            else:
+                print_assoc(k, v)
+        else:
+            print('Warnin: Ignored input:', k, file=sys.stderr)
 
-    if isinstance(v, (list, tuple)):
-        print_list(k, v)
-    elif isinstance(v, (dict, set)):
-        print_assoc(k, v)
-    else:
-        print('Warnin: Ignored input:', k, file=sys.stderr)
+print_item(data)

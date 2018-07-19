@@ -60,7 +60,7 @@ set -e
 
 # Loading defaults
 for file in ${ROOT_DIR}/roles/defaults/*; do
-    EXPORT=1 config2env $f
+    EXPORT=1 config2env $file
 done > /tmp/ansible-defaults.env
 echo Sourcing ansible defaults /tmp/ansible-defaults.env
 source /tmp/ansible-defaults.env

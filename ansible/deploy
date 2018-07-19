@@ -58,6 +58,13 @@ set -e
 
 [ -d $STATE_DIR ] || mkdir -p $STATE_DIR
 
+# Loading defaults
+for file in ${ROOT_DIR}/roles/defaults/*; do
+    EXPORT=1 config2env $f
+done > /tmp/ansible-defaults.env
+echo Sourcing ansible defaults /tmp/ansible-defaults.env
+source /tmp/ansible-defaults.env
+
 # Load inputs
 for file in getupengine.env terraform-out.env; do
     echo Sourcing $STATE_DIR/$file

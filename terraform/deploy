@@ -117,8 +117,8 @@ echo Applying...
 ${TERRAFORM_BIN} apply ${plan} ${opts}
 ret=$?
 
-echo Converting output
-${TERRAFORM_BIN} output -json | /getup-engine/terraform/json2env > $STATE_DIR/terraform-out.env
+echo Converting output to $STATE_DIR/terraform-out.env
+${TERRAFORM_BIN} output -json | EXPORT=1 config2env > $STATE_DIR/terraform-out.env
 
 if [ $ret -eq 0 -a $scale_infra -gt 0 ]; then
     echo Updating state: INFRA_COUNT=$INFRA_COUNT

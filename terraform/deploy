@@ -87,6 +87,7 @@ if [ $destroy == 1 ]; then
 
     if [ $assume_yes == 1 ]; then
         opts="$opts -force"
+        aws s3 rm --recursive s3://${GETUPCLOUD_BACKUP_STORAGE_S3_BUCKET}/ || true
     fi
     exec ${TERRAFORM_BIN} destroy -var-file=${STATE_DIR}/terraform.tfvars ${opts}
 fi

@@ -1,0 +1,18 @@
+---
+- name: Create curator config
+  template:
+    src: curator.yaml.j2
+    dest: curator.yaml
+
+- name: Update curator configmap
+  oc_configmap:
+    state: present
+    name: "logging-curator"
+    namespace: "{{ openshift_logging_namespace }}"
+    from_file:
+      config.yaml: "curator.yaml"
+
+- name: Rollout curator deployment
+  shell: >
+    {{ oc }} -n {{ openshift_logging_namespace }}
+    rollout latest dc/logging-curator

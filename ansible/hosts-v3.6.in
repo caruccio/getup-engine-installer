@@ -1030,5 +1030,8 @@ getupcloud_zabbix_server_host="${ZABBIX_SERVER_HOST}"
 getupcloud_zabbix_server_port="${ZABBIX_SERVER_PORT}"
 getupcloud_zabbix_host_annotation="zabbix_host"
 getupcloud_alertmanager_zabbix_webhook_replicas=2
-# -----------------------------------------------------------------------------
 
+# Logging
+openshift_logging_curator_default_days="${OPENSHIFT_LOGGING_CURATOR_DEFAULT_DAYS}"
+openshift_logging_curator_default_days_ops="${OPENSHIFT_LOGGING_CURATOR_DEFAULT_DAYS_OPS}"
+# -----------------------------------------------------------------------------

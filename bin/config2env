@@ -62,6 +62,6 @@ def print_item(data):
             else:
                 print_assoc(k, v)
         else:
-            print('Warnin: Ignored input:', k, file=sys.stderr)
+            print('Warning: Ignored input:', k, file=sys.stderr)
 
 print_item(data)

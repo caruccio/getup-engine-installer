@@ -22,8 +22,6 @@ else
     exit 1
 fi
 
-source setup-state-backup
-
 if [ -z "${NAME}" ]; then
     echo 'Missing deploy name'
     exit 1
@@ -41,6 +39,7 @@ assume_no=0
 no_plan=0
 dry_run=0
 opts=""
+state=""
 plan=${STATE_DIR}/terraform.plan
 
 for opt; do
@@ -58,6 +57,9 @@ for opt; do
     esac
     shift
 done
+
+source setup-state-backend
+
 
 if [ $scale_infra -gt 0 ]; then
     scale_to=$((scale_infra + INFRA_COUNT))
@@ -89,12 +91,12 @@ if [ $destroy == 1 ]; then
         opts="$opts -force"
         aws s3 rm --recursive s3://${GETUPCLOUD_BACKUP_STORAGE_S3_BUCKET}/ || true
     fi
-    exec ${TERRAFORM_BIN} destroy -var-file=${STATE_DIR}/terraform.tfvars ${opts}
+    exec ${TERRAFORM_BIN} destroy -var-file=${STATE_DIR}/terraform.tfvars ${opts} ${state:+-state=$state}
 fi
 
 if [ $no_plan == 0 ]; then
     echo "Planning... [$plan]"
-    ${TERRAFORM_BIN} plan -var-file=${STATE_DIR}/terraform.tfvars ${opts} -out=${plan}
+    ${TERRAFORM_BIN} plan -var-file=${STATE_DIR}/terraform.tfvars ${opts} ${state:+-state=$state} -out=${plan}
 fi
 
 if [ $assume_no == 1 ]; then
@@ -115,11 +117,11 @@ fi
 trap save-state EXIT
 
 echo Applying...
-${TERRAFORM_BIN} apply ${plan} ${opts}
+${TERRAFORM_BIN} apply ${opts} ${state:+-state-out=$state} ${plan}
 ret=$?
 
 echo Converting output to $STATE_DIR/terraform-out.env
-${TERRAFORM_BIN} output -json | EXPORT=1 config2env > $STATE_DIR/terraform-out.env
+${TERRAFORM_BIN} output -json ${state:+-state=$state} | EXPORT=1 config2env > $STATE_DIR/terraform-out.env
 
 if [ $ret -eq 0 -a $scale_infra -gt 0 ]; then
     echo Updating state: INFRA_COUNT=$INFRA_COUNT

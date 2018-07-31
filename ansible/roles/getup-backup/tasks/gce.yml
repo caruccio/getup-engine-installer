@@ -1,4 +1,13 @@
 ---
+- name: Create GCE service account secret
+  oc_secret:
+    state: present
+    name: gce-service-account
+    namespace: "{{ getupcloud_namespace }}"
+    contents:
+      - path: service_account.json
+        data: "{{ lookup('file', getupcloud_backup_gce_service_account_json) | string }}"
+
 # user databases backup
 - name: Delete old database-backup cronjob
   command: |
@@ -17,16 +26,13 @@
     --restart Never
     --labels 'job=database-backup,provider=aws,storage_type={{ getupcloud_backup_storage_kind }}'
 
-# volume backup
-- name: Create GCE service account secret
-  oc_secret:
-    state: present
-    name: gce-service-account
-    namespace: "{{ getupcloud_namespace }}"
-    contents:
-      - path: service_account.json
-        data: "{{ lookup('file', getupcloud_backup_gce_service_account_json) | string }}"
+- name: Add secret to database-backup cronjob
+  command: |
+    {{ oc }} volume cronjob/database-backup -n "{{ getupcloud_namespace }}"
+    --add --mount-path=/config/
+    --secret-name=gce-service-account --name=service-account
 
+# volume backup
 - name: Delete old volume-backup cronjob
   command: |
     {{ oc }} delete cronjobs/volume-backup -n "{{ getupcloud_namespace }}"

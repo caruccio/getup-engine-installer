@@ -25,7 +25,7 @@
     namespace: "{{ getupcloud_namespace }}"
     contents:
       - path: service_account.json
-        data: "{{ lookup('file', getupcloud_backup_gce_service_account_json) | to_json }}"
+        data: "{{ lookup('file', getupcloud_backup_gce_service_account_json) | string }}"
 
 - name: Delete old volume-backup cronjob
   command: |

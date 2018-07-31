@@ -4,6 +4,11 @@ if [ "$PROVIDER" == aws ]; then
     function __do_setup_state_backend()
     {
         local BUCKET_NAME=${STATE_BACKEND#s3://}
+        local CREATE_BUCKET_CONFIG=""
+
+        if [ ${AWS_DEFAULT_REGION} != "us-east-1" ]; then
+            CREATE_BUCKET_CONFIG="LocationConstraint=${AWS_DEFAULT_REGION}"
+        fi
 
         AWS_S3_BUCKET_NAME=${BUCKET_NAME} \
             envsubst < /getup-engine/state-backend/$PROVIDER-backend.tf.in > $STATE_DIR/$PROVIDER-backend.tf
@@ -18,8 +23,7 @@ if [ "$PROVIDER" == aws ]; then
         if [ $has_bucket -eq 0 ]; then
             echo Creating state backend bucket $STATE_BACKEND
             aws s3api create-bucket --bucket ${BUCKET_NAME} \
-                    --acl private \
-                    --create-bucket-configuration LocationConstraint=${AWS_DEFAULT_REGION}
+                    --acl private ${CREATE_BUCKET_CONFIG:+--create-bucket-configuration $CREATE_BUCKET_CONFIG}
             sleep 5
             aws s3api put-bucket-versioning --bucket ${BUCKET_NAME} --versioning-configuration Status=Enabled
         fi

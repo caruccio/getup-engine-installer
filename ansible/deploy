@@ -16,7 +16,7 @@ STAGES="pre install post getup scaleup upgrade-control-plane upgrade-nodes unins
 function stage_is()
 {
     for _stage; do
-        [ ${stage} == ${_stage} ] && return
+        [ "${stage}" == "${_stage}" ] && return
     done
     return 1
 }
@@ -235,7 +235,10 @@ if stage_is scaleup; then
     fi
     run_stage  -i $HOSTS_FILE ${ansible_args[*]}
     # move [new_nodes] to [nodes]
-    stage="" gen_hosts
+    old_stage=$stage
+    stage=""
+    gen_hosts
+    stage=$old_stage
 fi
 
 if stage_is $default_stage install; then

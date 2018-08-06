@@ -1,11 +1,16 @@
 #!/bin/bash
 
+if [ -e .suffix ]; then
+    export IMAGE_SUFFIX=$(<.suffix)
+fi
+
 export NO_PULL=1
 git pull
 sleep 2
 
-latest=v3.9
-for release in v3.9; do
+releases="v3.9 v3.10"
+latest=${releases##* }
+for release in $releases; do
     (
         rcolor=$(tput sgr0)
         color=$(tput sgr0 && tput setaf ${release#*.})
@@ -17,6 +22,8 @@ wait
 tput sgr0 && tput setaf 10 && tput bold
 echo
 echo
-echo "---> Tagging: getup-engine:$latest -> getup-engine:latest"
-sudo docker tag getup-engine:$latest getup-engine:latest
+
 tput sgr0
+image_name=getup-engine${IMAGE_SUFFIX}
+echo "---> Tagging: $image_name:$latest as $image_name:latest"
+docker tag $image_name:$latest $image_name:latest

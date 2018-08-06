@@ -40,3 +40,13 @@
     path: "/home/{{ ansible_user }}/.kube/config"
   tags:
   - post-install
+
+- name: Ensure master config has sane paths
+  yedit:
+    src: /etc/origin/master/master-config.yaml
+    key: 'auditConfig.auditFilePath'
+    value: "/var/lib/origin/openshift-audit/openshift-audit.log"
+    state: present
+  tags:
+    - pre-upgrade-control-plane
+    - pre-upgrade-control-plane-v3.10

@@ -35,11 +35,12 @@
 # volume backup
 - name: Delete old volume-backup cronjob
   command: |
-    {{ oc }} delete cronjobs/volume-backup -n "{{ getupcloud_namespace }}"
+    {{ oc }} delete --ignore-not-found cronjobs/volume-backup -n "{{ getupcloud_namespace }}"
 
 - name: Create volume-backup cronjob
   command: |
-    {{ oc }} run volume-backup -n "{{ getupcloud_namespace }}"
+    {{ oc }} run volume-backup
+    -n "{{ getupcloud_namespace }}"
     --env 'GOOGLE_APPLICATION_CREDENTIALS=/config/service_account.json'
     --env 'GOOGLE_ZONE={{ getupcloud_backup_gce_zone }}'
     --env 'DEFAULT_RETENTION_DAYS={{ getupcloud_backup_retention_days | default(7) | int }}'

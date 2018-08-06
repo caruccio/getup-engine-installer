@@ -6,7 +6,7 @@
 
 - name: Create database-backup cronjob
   command: >
-    oc run database-backup
+    {{ oc }} run database-backup
     -n "{{ getupcloud_namespace }}"
     --env 'AZURE_ACCOUNT_NAME={{ getupcloud_backup_storage_azure_account_name }}'
     --env 'AZURE_ACCOUNT_KEY={{ getupcloud_backup_storage_azure_account_key }}'

@@ -220,7 +220,7 @@ if [ "${stage}" == 'scaleup' ]; then
         echo '# Infra Nodes'
         if [ -n "${NEW_INFRA_NODES}" ]; then
             for node in ${NEW_INFRA_NODES}; do
-                openshift_host $node "openshift_schedulable=false openshift_node_labels=\"{'color':'green','role':'infra','region':'infra','zone':'default','server_name':'$(server_name $node)'}\""
+                openshift_host $node "openshift_node_group_name=\"node-config-infra\" openshift_schedulable=false openshift_node_labels=\"{'color':'green','role':'infra','region':'infra','zone':'default','server_name':'$(server_name $node)'}\""
             done
         fi
     fi
@@ -239,7 +239,7 @@ if [ "${stage}" == 'scaleup' ]; then
         echo '# App Nodes'
         if [ -n "${NEW_APP_NODES}" ]; then
             for node in ${NEW_APP_NODES}; do
-                openshift_host $node "openshift_schedulable=false openshift_node_labels=\"{'color':'green','role':'app','region':'primary','zone':'default', 'builder':'true', 'server_name':'$(server_name $node)'}\""
+                openshift_host $node "openshift_node_group_name=\"node-config-compute\" openshift_schedulable=false openshift_node_labels=\"{'color':'green','role':'app','region':'primary','zone':'default', 'builder':'true', 'server_name':'$(server_name $node)'}\""
             done
         fi
     fi
@@ -250,19 +250,19 @@ else
     echo
     echo '# MasterNodes'
     for master in ${MASTER_HOSTNAMES}; do
-        openshift_host $master "openshift_node_labels=\"{'role':'master','region':'primary','zone':'default','server_name':'$(server_name $master)'}\""
+        openshift_host $master "openshift_node_group_name=\"node-config-master\" openshift_node_labels=\"{'role':'master','region':'primary','zone':'default','server_name':'$(server_name $master)'}\""
     done
 
     echo
     echo '# Infra Nodes'
     for infra in ${INFRA_HOSTNAMES}; do
-        openshift_host $infra "openshift_node_labels=\"{'role':'infra','region':'infra','zone':'default','server_name':'$(server_name $infra)'}\""
+        openshift_host $infra "openshift_node_group_name=\"node-config-infra\" openshift_node_labels=\"{'role':'infra','region':'infra','zone':'default','server_name':'$(server_name $infra)'}\""
     done
 
     echo
     echo '# App Nodes'
     for app in ${APP_HOSTNAMES}; do
-        openshift_host $app "openshift_node_labels=\"{'role':'app','region':'primary','zone':'default','builder':'true','server_name':'$(server_name $app)'}\""
+        openshift_host $app "openshift_node_group_name=\"node-config-compute\" openshift_node_labels=\"{'role':'app','region':'primary','zone':'default','builder':'true','server_name':'$(server_name $app)'}\""
     done
 
     echo

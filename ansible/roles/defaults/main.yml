@@ -103,7 +103,6 @@ getupcloud_slack_operations_channel: "#operations"
 
 # TODO: read from openshift facts
 openshift_prometheus_namespace: "openshift-metrics"
-
 getupcloud_zabbix_server_port: 10051
 getupcloud_zabbix_host_annotation: "zabbix_host"
 getupcloud_alertmanager_zabbix_webhook_replicas: 2

@@ -1247,6 +1247,7 @@ kubernetes_api_endpoint="${API_ENDPOINT}"
 kubernetes_service_account_token_file="/run/secrets/kubernetes.io/serviceaccount/token"
 osm_default_node_selector="role=app"
 infra_count=${INFRA_COUNT}
+getupcloud_namespace_node_selector="role=infra"
 
 getupcloud_cluster_name="${NAME}"
 getupcloud_cluster_zone="${CLUSTER_ZONE}"
@@ -1332,7 +1333,7 @@ getupcloud_api_aws_storage_bucket_name="${GETUPCLOUD_API_AWS_STORAGE_BUCKET_NAME
 getupcloud_api_aws_location="${GETUPCLOUD_API_AWS_REGION}"
 
 # Install getupcloud billing collector
-getupcloud_install_billing=true
+getupcloud_install_billing="${GETUPCLOUD_INSTALL_BILLING}"
 getupcloud_billing_service_name="usage"
 
 # Install getupcloud backup routines
@@ -1359,6 +1360,9 @@ getupcloud_slack_operations_channel="${GETUPCLOUD_SLACK_OPERATIONS_CHANNEL}"
 getupcloud_slack_token="${GETUPCLOUD_SLACK_TOKEN}"
 getupcloud_slack_username="error-bot"
 getupcloud_slack_fail_silently="True"
+
+# PagerDuty Integration
+getupcloud_pager_duty_service_key="${GETUPCLOUD_PAGER_DUTY_SERVICE_KEY}"
 
 # Alertmanager zabbix integration
 getupcloud_install_alertmanager_zabbix_webhook="${ZABBIX_ENABLED}"

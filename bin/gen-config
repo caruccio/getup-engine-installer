@@ -205,6 +205,8 @@ if ask "Install Openshift Monitoring (Prometheus + Alertmanager)?" ${INSTALL_MON
     ex OPENSHIFT_MONITORING_STORAGE_CLASS_NAME=${OPENSHIFT_STORAGECLASS_NAME}
 #    rd OPENSHIFT_MONITORING_RETENTION 8w
 
+    rd GETUPCLOUD_PAGER_DUTY_SERVICE_KEY
+
     if ask "Enable Alertmanager Zabbix Webhook?" ${ZABBIX_ENABLED:-false}; then
         ex ZABBIX_ENABLED=true
         rd ZABBIX_SERVER_HOST

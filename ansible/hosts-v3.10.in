@@ -1247,7 +1247,7 @@ openshift_node_groups=[{'name':'node-config-master','labels':['node-role.kuberne
 [all:vars]
 kubernetes_api_endpoint="${API_ENDPOINT}"
 kubernetes_service_account_token_file="/run/secrets/kubernetes.io/serviceaccount/token"
-osm_default_node_selector="{"node-role.kubernetes.io/compute": "true"}
+osm_default_node_selector="node-role.kubernetes.io/compute=true"
 infra_count=${INFRA_COUNT}
 
 getupcloud_cluster_name="${NAME}"

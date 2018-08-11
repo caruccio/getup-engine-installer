@@ -311,7 +311,7 @@ groups:
 {% endraw %}
   - alert: K8SApiServerLatency
     expr: histogram_quantile(0.99, sum(apiserver_request_latencies_bucket{verb=~"POST|GET|DELETE|PATCH"})
-      WITHOUT (instance, node, resource)) / 1e+06 > 2
+      WITHOUT (instance, node, resource)) / 1e+06 > 10
     for: 10m
     labels:
       cluster: {{ cluster_name }}
@@ -320,7 +320,7 @@ groups:
     annotations:
 {% raw %}
       description: 99th percentile Latency for {{ $labels.verb }} requests to the
-        kube-apiserver is higher than 2s.
+        kube-apiserver is higher than 10s.
       summary: Kubernetes apiserver latency is high
 {% endraw %}
   - alert: K8SApiServerEtcdAccessLatency
@@ -511,18 +511,17 @@ groups:
       description: To many containers are dying by OOM on {{$labels.source}}
       summary: Too many dead containers
 {% endraw %}
+  - record: disk:usage_percent
+    expr: container_fs_usage_bytes{device=~"^/dev/(xvd[a-z][a-z]|sd[a-z])[1-9]*$"} / container_fs_limit_bytes{device=~"^/dev/(xvd[a-z][a-z]|sd[a-z])[1-9]*$"} * 100 > 85
   - alert: NodeDiskUsage
-    expr: sum(container_fs_usage_bytes{device=~"^/dev/(xvd[a-z][a-z]|sd[a-z][1-9])$"}) by (instance, device) / sum(container_fs_limit_bytes{device=~"^/dev/(xvd[a-z][a-z]|sd[a-z][1-9])$"}) by (instance, device) * 100 > 90
-    for: 1m
+    expr: predict_linear(disk:usage_percent[1h], 60 * 60 * 24 * 8) > 100
+    for: 24h
     labels:
       cluster: {{ cluster_name }}
       service: node
-      severity: critical
+      severity: warning
     annotations:
 {% raw %}
-      description: '{{$labels.instance}} ({{$labels.label_type}}): Disk  usage is
-        above 90% (current value is: {{ $value }})'
-      summary: High disk usage detected
+      description: 'Disk {{$label.device}} on {{$label.instance}} will be full in 7 days'
+      summary: High disk usage
 {% endraw %}
-
-  

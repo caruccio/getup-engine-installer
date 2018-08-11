@@ -2,7 +2,7 @@
 
 set -e
 
-version=v3.9
+version=v3.10
 
 if [ $# -lt 1 ]; then
     echo "Usage: $0 cluster-name [version=$version] [docker-run-options...]"

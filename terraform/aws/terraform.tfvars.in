@@ -1,3 +1,5 @@
+openshift_release = "${TARGET_OPENSHIFT_RELEASE}"
+
 prefix          = "${PREFIX}"
 cluster_id      = "${CLUSTER_ID}"
 cluster_zone    = "${CLUSTER_ZONE}"

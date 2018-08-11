@@ -5,9 +5,23 @@ This project holds scripts and tools for Getup Engine cluster installer.
 The installer runs inside a docker contrainer, built for a specific version.
 Supported versions are based on [Openshift Origin](https://github.com/openshift/origin) releases:
 
-- v3.6
-- v3.7
 - v3.9
+- v3.10
+
+# TL;DR;
+
+```
+$ sudo ./build-all
+
+$ bin/gen-config mycluster    ## or whatever you whant to name your cluster
+...anwser the questions...
+
+$ ./run mycluster v3.10
+[mycluster @ 3.10.0] 08/09/18 18:44:33 /getup-engine $ images/deploy
+
+
+[mycluster @ 3.10.0] 08/09/18 18:44:33 /getup-engine $ terraform/deploy
+```
 
 The full install process comprises the following steps:
 
@@ -49,40 +63,38 @@ When finished, the images will be generated as `getup-engine:[version]`:
 ```
 $ docker images | grep getup-engine
 getup-engine                         v3.9                3cecca9ab451        17 minutes ago      2.3 GB
-getup-engine                         latest              3cecca9ab451        17 minutes ago      2.3 GB
-getup-engine                         v3.7                c9b776eff6e0        17 minutes ago      1.92 GB
-getup-engine                         v3.6                98c083fbcb9e        17 minutes ago      1.91 GB
+getup-engine                         v3.10               41fbdfdc20a1        17 minutes ago      2.22 GB
+getup-engine                         latest              41fbdfdc20a1        17 minutes ago      2.22 GB
 
 ```
 
-Alternativelly, to generate only the version `v3.7`, use:
+Alternativelly, to generate only the version `v3.9`, use:
 
 ```
-$ ./build v3.7
+$ ./build v3.9
 ```
 
 ### Create cluster config
 
 All information about a cluster is stored inside the so-called `state dir` (var $STATE_DIR inside the scripts).
 This dir is responsible for holding any non-volatile bit of information about the cluster. By default, the dir
-`state/[cluster-name]` is assumed, but you can specify somewhere else to be the state dir.
+`./state/[cluster-name]` is assumed, but you can specify somewhere else to be the state dir. This folder holds
+the cluster state files (config, certificates, ssh keys, terraform.tfstate, etc) and must persist during 
+cluster lifecycle.
 
-First, create the folder to store the cluster state files (config, certificates, ssh keys, terraform.tfstate, etc).
+First, choose a name for yout cluster. Prefer short and simple names (i.e. [a-z0-9]+).
 
 ```
 $ export CLUSTER_NAME=mateus
-$ mkdir -p state/$CLUSTER_NAME
 ```
 
-It's a good practice to create the folder with the same name of the cluster. Prefer short and simple names (i.e. [a-z0-9]).
-This folder should persist during cluster lifecycle.
-
-Use the script `bin/gen-config [cluster-name]` to create the configuration file used as input by the installer.
+Run the script `bin/gen-config [cluster-name]` to create the configuration file used as input by the installer.
 This will create the file `./state/$CLUSTER_NAME/getupengine.env`. The installer expects to find it there.
 
 ```
 $ bin/gen-config $CLUSTER_NAME
 ```
+
 **Note the name of the cluster is `mateus`, which is also the name of the directory for the state dir.**
 
 To use another state dir, provide a valid full path:
@@ -93,10 +105,9 @@ $ bin/gen-config /another/state-dir/$CLUSTER_NAME
 
 > You can cancel the script at any moment with `^C`. The next execution reuses most of the values.
 > Each execution generates a backup file `getupengine.env.[timestamp].bkp`
-> based in `getupengine.env` current values.
+> from the current `getupengine.env` values.
 
-Create a new pair of SSH keys to be used to access the hosts.
-**The ssh key should not have a passphrase.**
+Create a new pair of SSH keys to access the cluster hosts.
 
 ```
 $ ssh-keygen -f state/$CLUSTER_NAME/id_rsa
@@ -118,13 +129,14 @@ aws ec2 import-key-pair --key-name default --public-key-material file://./state/
 
 > On Azure, the keys are loaded during host instantiation.
 
-### Copy Getup Engine private keys
+### Install Getup Engine private keys (optional)
 
-In order to install getup-api and getup-billing, you must copy both keys to the installer state dir.
-Those keys are provider to you when you purchase the product. If you don't have one, please contact sales@getupcloud.com
+If you are not going to install getup-billing, please go to the next section.
+
+In order to install getup-billing, you must copy the deployment ssh-key to the installer state dir.
+This key is provider to you when you purchase the product. If you don't have one, please contact sales@getupcloud.com
 
 ```
-$ cp /path/for/getup-api-id_rsa state/$CLUSTER_NAME/getup-api-id_rsa
 $ cp /path/for/getup-billing-id_rsa state/$CLUSTER_NAME/getup-billing-id_rsa
 ```
 
@@ -133,7 +145,7 @@ $ cp /path/for/getup-billing-id_rsa state/$CLUSTER_NAME/getup-billing-id_rsa
 Start the installer container with command `./run [cluster-name] [version] <docker-run-parameters...>`.
 
 ```
-$ ./run $CLUSTER_NAME v3.9
+$ ./run $CLUSTER_NAME v3.10
 ```
 
 > Tip: You can add the parameters `-d` to execute the container as a daemon. That way, it's possible to
@@ -143,20 +155,20 @@ $ ./run $CLUSTER_NAME v3.9
 Inside the container, the terminal prompt will looks like this:
 
 ```
-[mateus @ 3.9.0] 05/23/18 21:07:08 /getup-engine $
- ^^^^^^   ^^^^^  ^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^
+[mateus @ 3.10.0] 08/09/18 18:44:33 /getup-engine $ images/deploy
+ ^^^^^^   ^^^^^^  ^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^
    |       |             |              |
-   |       |             +-- date/hour  +-- $PWD
+   |       |             +-- date/hour  +-- Installer root
    |       +-- target version to install/update
    +-- cluster name
 ```
 
-A new container named `getup-engine-[cluster-name]` is created on the host (your local host). You can check it with:
+A new container named `getup-engine-[cluster-name]` is created on the host (your local host). You can check it from another terminal:
 
 ```
 $ docker ps
 CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS               NAMES
-61545a414aee        getup-engine:v3.9   "/getup-engine/bin..."   14 minutes ago      Up 14 minutes                           getup-engine-mateus
+4512af56cc7a        getup-engine:v3.10  "/getup-engine/bin..."   14 minutes ago      Up 14 minutes                           getup-engine-mateus
 ```
 
 ## 2. Deploying the infrastructure
@@ -256,10 +268,10 @@ Automatic upgrades can be made between versions, but never skip a version. Examp
 ok, but `v3.6 -> v3.9` is not possible.
 
 Start the installer container the same way as described in step 1 above, using the image version you want to upgrate to.
-For example, if the cluster was created in version `v3.7`, execute the following command to upgrade to `v3.9`:
+For example, if the cluster was created in version `v3.9`, execute the following command to upgrade to `v3.10`:
 
 ```
-$ ./run $CLUSTER_NAME v3.9
+$ ./run $CLUSTER_NAME v3.10
 ```
 
 The upgrade is done in two steps:
@@ -276,7 +288,7 @@ During the upgrade, nodes and masters will be unavailable.
 Start the control plane upgrade:
 
 ```
-$ /getup-engine/ansible/deploy stage=upgrade-control-plane
+[mateus @ 3.10.0] 08/09/18 18:44:33 /getup-engine $ /getup-engine/ansible/deploy stage=upgrade-control-plane
 ```
 
 You can watch nodes being upgraded from another terminal:
@@ -294,7 +306,7 @@ unschedulable, drained, upgraded and marked as schedulable again.
 Start the applicatoin nodes upgrade:
 
 ```
-$ /getup-engine/ansible/deploy stage=upgrade-nodes
+[mateus @ 3.10.0] 08/09/18 18:44:33 /getup-engine $ /getup-engine/ansible/deploy stage=upgrade-nodes
 ```
 
 > Tip: after upgrading, the pods of the cluster may be unbalanced. You can use

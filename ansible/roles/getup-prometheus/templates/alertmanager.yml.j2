@@ -37,14 +37,14 @@ route:
   routes:
   # This routes performs a regular expression match on alert labels to
   # catch alerts that are related to a list of services.
-{% if slack_operations_api_url is defined and slack_operations_api_url is not none %}
+{% if slack_operations_api_url is defined and slack_operations_api_url %}
   - match_re:
       cluster: .*
     receiver: slack_operations
     continue: true
 {% endif %}
 
-{% if pager_duty_service_key is defined and pager_duty_service_key is not none %}
+{% if pager_duty_service_key is defined and pager_duty_service_key %}
   - match_re:
       alertname: .*
       cluster: .*
@@ -66,7 +66,7 @@ inhibit_rules:
 
 receivers:
 
-{% if slack_operations_api_url is defined and slack_operations_api_url is not none %}
+{% if slack_operations_api_url is defined and slack_operations_api_url %}
 - name: slack_operations
   slack_configs:
   - send_resolved: true
@@ -79,7 +79,7 @@ receivers:
 {% endraw %}
 {% endif %}
 
-{% if pager_duty_service_key is defined and pager_duty_service_key is not none %}
+{% if pager_duty_service_key is defined and pager_duty_service_key %}
 - name: pager_duty
   pagerduty_configs:
   - service_key: {{ pager_duty_service_key }}

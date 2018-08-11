@@ -17,8 +17,6 @@
   tasks:
     - include_role:
         name: getup-prometheus
-    - include_role:
-        name: getup-grafana
 
 - name: EventRouter
   hosts: oo_first_master

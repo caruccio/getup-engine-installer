@@ -130,7 +130,7 @@
 - name: Replace prometheus-alerts configmap
   oc_configmap:
     state: present
-    name: prometheus-alerts
+    name: alertmanager
     namespace: "{{ openshift_prometheus_namespace }}"
     from_file:
       alertmanager.yml: "{{ tempdir }}/alertmanager.yml"

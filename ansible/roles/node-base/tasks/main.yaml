@@ -108,3 +108,16 @@
 #  tags:
 #  - pre-install
 #  when: self_signed_ca_cert_file is defined and self_signed_ca_cert_file | default("") != ""
+
+- name: Limit journald total files
+  ini_file:
+    path: /etc/systemd/journald.conf
+    section: Journal
+    option: SystemMaxFiles
+    value: 200
+    backup: yes
+
+- name: Make sure journald restarts
+  systemd:
+    state: restarted
+    name: systemd-journald

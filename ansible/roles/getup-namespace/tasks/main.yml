@@ -4,5 +4,5 @@
     state: present
     name: "{{ getupcloud_namespace }}"
     node_selector:
-    - role=infra
+    - "{{ getupcloud_namespace_node_selector }}"
 

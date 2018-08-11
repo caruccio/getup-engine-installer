@@ -1,6 +1,6 @@
 #!/bin/bash
 
-REF_NAME=${1:-remotes/origin/release-3.6.0}
+REF_NAME=${1:-remotes/origin/release-3.10}
 BUILD_BRANCH=${2:-${REF_NAME##*/}}
 
 [ -e environment ] && . environment
@@ -27,18 +27,18 @@ if [ ${BRANCH} != ${BUILD_BRANCH} ]; then
   git checkout -b ${BUILD_BRANCH} ${REF_NAME}
 fi
 #echo 'echo ret=$?' >> hack/build-rpm-release.sh
-make release
+make release || [ -d _output/local/releases/rpms ]
 #make release-binaries
 
 ## Publish RPMS
 cd _output/local/releases/rpms
-aws s3 sync . s3://yum.infra.getupcloud.com/centos/7/paas/x86_64/openshift-origin/ --region us-east-1 --exclude='*.repo'
+aws s3 sync . s3://yum.infra.getupcloud.com/centos/7/paas/x86_64/openshift-origin/${BRANCH}/ --region us-east-1 --exclude='*.repo'
 
 ## Setup YUM to install
 if ! grep getupcloud-openshift-origin /etc/yum.repos.d/getupcloud-openshift.repo; then
     cat > /etc/yum.repos.d/getupcloud-openshift.repo <<EOF
 [getupcloud-openshift-origin]
-baseurl = http://yum.infra.getupcloud.com/centos/7/paas/x86_64/openshift-origin
+baseurl = http://yum.infra.getupcloud.com/centos/7/paas/x86_64/openshift-origin/${BRANCH}/
 gpgcheck = 0
 name = OpenShift Origin - Getup Cloud
 enabled = 1

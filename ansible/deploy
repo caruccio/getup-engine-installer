@@ -1,7 +1,7 @@
 #!/bin/bash
 
 case $TARGET_OPENSHIFT_RELEASE in
-    v3.9) ;;
+    v3.9|v3.10) ;;
     *)
         echo Unsupported Openshift version: $TARGET_OPENSHIFT_RELEASE
         exit 1
@@ -201,11 +201,15 @@ if stage_is upgrade-control-plane || stage_is upgrade-nodes; then
 
     gen_hosts $TARGET_HOSTS
 
+    ansible-playbook -i $HOSTS_FILE playbooks/upgrade/${TARGET_OPENSHIFT_RELEASE}/${upgrade_playbook}.yml --tags=pre-upgrade ${ansible_args[*]}
+
     upgrade_playbook=/usr/share/ansible/openshift-ansible/playbooks/byo/openshift-cluster/upgrades/${TARGET_OPENSHIFT_RELEASE//./_}/${upgrade_playbook}.yml
     if ! ansible-playbook -i $TARGET_HOSTS $upgrade_playbook ${ansible_args[*]}; then
         echo Upgrade has failed
         exit 1
     fi
+
+    ansible-playbook -i $HOSTS_FILE playbooks/upgrade/${TARGET_OPENSHIFT_RELEASE}/${upgrade_playbook}.yml --tags=post-upgrade ${ansible_args[*]}
 
     oc version
     oc get nodes
@@ -226,7 +230,7 @@ if stage_is uninstall; then
 fi
 
 if stage_is $default_stage pre scaleup; then
-    ansible-playbook -i $HOSTS_FILE playbooks/node/config.yml --tags=pre-install ${ansible_args[*]}
+    ansible-playbook -i $HOSTS_FILE playbooks/node/config.yml --tags=pre-install,pre-install-${TARGET_OPENSHIFT_RELEASE} ${ansible_args[*]}
 fi
 
 if stage_is scaleup; then
@@ -246,7 +250,7 @@ if stage_is $default_stage install; then
 fi
 
 if stage_is $default_stage post scaleup; then
-    ansible-playbook -i $HOSTS_FILE playbooks/node/config.yml --tags=post-install ${ansible_args[*]}
+    ansible-playbook -i $HOSTS_FILE playbooks/node/config.yml --tags=post-install,post-install-${TARGET_OPENSHIFT_RELEASE} ${ansible_args[*]}
 fi
 
 if [ "${GETUPCLOUD_DATABASE_MODE}" == 'managed' ]; then

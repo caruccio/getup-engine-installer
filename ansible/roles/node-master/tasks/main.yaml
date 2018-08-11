@@ -30,7 +30,7 @@
   - systemd: name=etcd state=restarted
 
   tags:
-    - post-install
+    - post-install-v3.9
 
 - name: Ensure read-only mode for .kube/config
   file:

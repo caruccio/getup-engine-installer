@@ -6,3 +6,5 @@ ansible/certs
 environment*
 plan.*
 state
+scripts/origin
+.suffix

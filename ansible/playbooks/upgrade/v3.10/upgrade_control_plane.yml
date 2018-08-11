@@ -1,0 +1,44 @@
+---
+- name: Setup
+  hosts: localhost
+  connection: local
+  become: no
+  gather_facts: no
+  tags:
+  - always
+  roles:
+  - init
+
+## Post upgrade tasks
+
+- name: Ensure master config has sane paths
+  hosts: oo_first_master
+  gather_facts: no
+  tasks:
+  - yedit:
+      src: /etc/origin/master/master-config.yaml
+      key: 'auditConfig.auditFilePath'
+      value: "/var/lib/origin/openshift-audit/openshift-audit.log"
+      state: present
+  tags:
+  - pre-upgrade
+
+- name: Init node groups
+  hosts: oo_first_master
+  gather_facts: no
+  tasks:
+  - import_playbook: /openshift-ansible/playbooks/openshift-master/openshift_node_group.yml
+  tags:
+  - pre-upgrade
+
+## Post upgrade tasks
+
+- name: Install Openshift Grafana
+  hosts: oo_first_master
+  gather_facts: no
+  tasks:
+  - import_playbook: /openshift-ansible/playbooks/openshift-grafana/config.yml
+  tags:
+  - post-upgrade
+  when:
+  - openshift_hosted_prometheus_deploy | default(false) | bool

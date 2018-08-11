@@ -277,6 +277,12 @@ else
     ex INSTALL_CONSOLE=false
 fi
 
+if ask 'Install Billing Backend?' true; then
+    ex GETUPCLOUD_INSTALL_BILLING=true
+else
+    ex GETUPCLOUD_INSTALL_BILLING=false
+fi
+
 sel _EMAIL_BACKEND_TYPE None SMTP Mailgun
 case $_EMAIL_BACKEND_TYPE in
     SMTP)

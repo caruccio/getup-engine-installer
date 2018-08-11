@@ -3,14 +3,15 @@
         "aws_access_key": "{{env `AWS_ACCESS_KEY_ID`}}",
         "aws_secret_key": "{{env `AWS_SECRET_ACCESS_KEY`}}",
         "aws_region":     "{{env `AWS_DEFAULT_REGION`}}",
-        "subnet_id":      "{{env `PACKER_AWS_SUBNET_ID`}}"
+        "subnet_id":      "{{env `PACKER_AWS_SUBNET_ID`}}",
+        "ami_name_bastion": "GetupEngine Bastion {{env `TARGET_OPENSHIFT_RELEASE`}}"
     },
 
     "builders": [
         {
             "name":           "bastion",
             "type":           "amazon-ebs",
-            "ami_name":       "GetupEngine Bastion",
+            "ami_name":       "{{user `ami_name_bastion`}}",
             "access_key":     "{{user `aws_access_key`}}",
             "secret_key":     "{{user `aws_secret_key`}}",
             "region":         "{{user `aws_region`}}",

@@ -201,11 +201,7 @@ if stage_is upgrade-control-plane || stage_is upgrade-nodes; then
 
     gen_hosts $TARGET_HOSTS
 
-    ansible-playbook -i $HOSTS_FILE playbooks/node/config.yml --tags=pre-upgrade-control-plane,pre-upgrade-control-plane-$TARGET_OPENSHIFT_VERSION ${ansible_args[*]}
-
-    if stage_is upgrade-control-plane && [ "$TARGET_OPENSHIFT_RELEASE" == 'v3.10' ]; then
-        ansible-playbook -i $HOSTS_FILE /openshift-ansible/playbooks/openshift-master/openshift_node_group.yml
-    fi
+    ansible-playbook -i $HOSTS_FILE playbooks/upgrade/${TARGET_OPENSHIFT_RELEASE}/${upgrade_playbook}.yml --tags=pre-upgrade ${ansible_args[*]}
 
     upgrade_playbook=/usr/share/ansible/openshift-ansible/playbooks/byo/openshift-cluster/upgrades/${TARGET_OPENSHIFT_RELEASE//./_}/${upgrade_playbook}.yml
     if ! ansible-playbook -i $TARGET_HOSTS $upgrade_playbook ${ansible_args[*]}; then
@@ -213,9 +209,7 @@ if stage_is upgrade-control-plane || stage_is upgrade-nodes; then
         exit 1
     fi
 
-    if stage_is upgrade-control-plane && [ "$TARGET_OPENSHIFT_RELEASE" == 'v3.10' -a "$INSTALL_MONITORING" == true ]; then
-        ansible-playbook -i $TARGET_HOSTS /openshift-ansible/playbooks/openshift-grafana/config.yml ${ansible_args[*]}
-    fi
+    ansible-playbook -i $HOSTS_FILE playbooks/upgrade/${TARGET_OPENSHIFT_RELEASE}/${upgrade_playbook}.yml --tags=post-upgrade ${ansible_args[*]}
 
     oc version
     oc get nodes

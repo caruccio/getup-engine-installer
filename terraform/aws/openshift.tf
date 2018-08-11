@@ -15,6 +15,10 @@ provider "random" {
 ###### Common Variables
 #########################################
 
+variable "openshift_release" {
+    description = "Openshift Release for base image name"
+}
+
 variable "master_count" {
     default = 1
 }
@@ -153,6 +157,7 @@ data "aws_ami" "centos_bastion" {
 
   filter {
     name   = "name"
+#    values = ["${var.ami_bastion_image_name_filter} ${var.openshift_release}"]
     values = ["${var.ami_bastion_image_name_filter}"]
   }
 
@@ -169,6 +174,7 @@ data "aws_ami" "centos_master" {
 
   filter {
     name   = "name"
+#    values = ["${var.ami_master_image_name_filter} ${var.openshift_release}"]
     values = ["${var.ami_master_image_name_filter}"]
   }
 
@@ -185,6 +191,7 @@ data "aws_ami" "centos_infra" {
 
   filter {
     name   = "name"
+#    values = ["${var.ami_infra_image_name_filter} ${var.openshift_release}"]
     values = ["${var.ami_infra_image_name_filter}"]
   }
 
@@ -201,6 +208,7 @@ data "aws_ami" "centos_app" {
 
   filter {
     name   = "name"
+#    values = ["${var.ami_app_image_name_filter} ${var.openshift_release}"]
     values = ["${var.ami_app_image_name_filter}"]
   }
 

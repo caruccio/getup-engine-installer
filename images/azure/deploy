@@ -10,6 +10,15 @@ else
     export HIGH_PERF_DISK_TYPE=Standard_LRS
 fi
 
+function clean_exit()
+{
+    local status=${1:-0}
+    echo Destroying temporary resources
+    terraform destroy -state=$ROOT_DIR/terraform.tfstate -force
+    echo Image building exited with status $status
+    exit "$status"
+}
+
 function build()
 {
     if [ -x $ROOT_DIR/pre-deploy ]; then
@@ -24,6 +33,7 @@ function build()
     echo Creating resources
     terraform validate
     terraform plan -state=$ROOT_DIR/terraform.tfstate -out=${plan}
+    trap "clean_exit 1" ERR
     terraform apply -state-out=$ROOT_DIR/terraform.tfstate ${plan}
     eval $(terraform output | tr -d ' ')
 
@@ -42,8 +52,6 @@ function build()
         az image create --resource-group ${AZURE_RESOURCE_GROUP} --name $image --source $vm
     done
 
-    echo Cleaning resources
-    terraform destroy -state=$ROOT_DIR/terraform.tfstate -force
 
     if [ -x $ROOT_DIR/post-deploy ]; then
         source $ROOT_DIR/post-deploy
@@ -52,3 +60,4 @@ function build()
 
 cd $ROOT_DIR
 build
+clean_exit

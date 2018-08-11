@@ -7,3 +7,4 @@ environment*
 plan.*
 state
 scripts/origin
+.suffix

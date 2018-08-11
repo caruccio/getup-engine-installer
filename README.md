@@ -14,7 +14,7 @@ Supported versions are based on [Openshift Origin](https://github.com/openshift/
 $ sudo ./build-all
 
 $ bin/gen-config mycluster    ## or whatever you whant to name your cluster
-...anwser the questions...
+...answer the questions...
 
 $ ./run mycluster v3.10
 [mycluster @ 3.10.0] 08/09/18 18:44:33 /getup-engine $ images/deploy

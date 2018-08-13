@@ -512,7 +512,7 @@ groups:
       summary: Too many dead containers
 {% endraw %}
   - record: disk:usage_percent
-    expr: container_fs_usage_bytes{device=~"^/dev/(xvd[a-z][a-z]|sd[a-z])[1-9]*$"} / container_fs_limit_bytes{device=~"^/dev/(xvd[a-z][a-z]|sd[a-z])[1-9]*$"} * 100 > 85
+    expr: container_fs_usage_bytes{device=~"^/dev/(xvd[a-z][a-z]|sd[a-z])[1-9]*$"} / container_fs_limit_bytes{device=~"^/dev/(xvd[a-z][a-z]|sd[a-z])[1-9]*$"} * 100
   - alert: NodeDiskUsage
     expr: predict_linear(disk:usage_percent[1h], 60 * 60 * 24 * 8) > 100
     for: 24h

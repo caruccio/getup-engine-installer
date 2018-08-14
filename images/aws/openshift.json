@@ -6,9 +6,6 @@
         "subnet_id":      "{{env `PACKER_AWS_SUBNET_ID`}}",
         "high_perf_disk_type": "{{env `HIGH_PERF_DISK_TYPE`}}",
         "high_perf_disk_iops": "{{env `HIGH_PERF_DISK_IOPS`}}",
-##        "ami_name_master":     "GetupEngine Master {{env `TARGET_OPENSHIFT_RELEASE`}}",
-##        "ami_name_infra":      "GetupEngine Infra {{env `TARGET_OPENSHIFT_RELEASE`}}",
-##        "ami_name_app":        "GetupEngine App {{env `TARGET_OPENSHIFT_RELEASE`}}"
         "ami_name_master":     "GetupEngine Master",
         "ami_name_infra":      "GetupEngine Infra",
         "ami_name_app":        "GetupEngine App"

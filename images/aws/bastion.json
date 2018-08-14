@@ -4,7 +4,6 @@
         "aws_secret_key": "{{env `AWS_SECRET_ACCESS_KEY`}}",
         "aws_region":     "{{env `AWS_DEFAULT_REGION`}}",
         "subnet_id":      "{{env `PACKER_AWS_SUBNET_ID`}}",
-#        "ami_name_bastion": "GetupEngine Bastion {{env `TARGET_OPENSHIFT_RELEASE`}}"
         "ami_name_bastion": "GetupEngine Bastion"
     },
 

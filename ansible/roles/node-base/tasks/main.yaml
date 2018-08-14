@@ -109,6 +109,14 @@
 #  - pre-install
 #  when: self_signed_ca_cert_file is defined and self_signed_ca_cert_file | default("") != ""
 
+- name: Limit journald max disk usage
+  ini_file:
+    path: /etc/systemd/journald.conf
+    section: Journal
+    option: SystemMaxUse
+    value: "5G"
+    backup: yes
+
 - name: Limit journald total files
   ini_file:
     path: /etc/systemd/journald.conf

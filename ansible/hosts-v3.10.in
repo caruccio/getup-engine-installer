@@ -129,7 +129,7 @@ openshift_master_loopback_ratelimit_burst=2000
 # - openshift_docker_options
 #openshift_docker_use_system_container=False
 # Install and run cri-o. By default this will install cri-o as a system container.
-openshift_use_crio=False
+openshift_use_crio=True
 # You can install cri-o as an rpm by setting the following variable:
 #openshift_crio_use_rpm=True
 # NOTE: This uses openshift_docker_systemcontainer_image_registry_override as it's override

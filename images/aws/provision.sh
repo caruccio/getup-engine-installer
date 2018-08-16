@@ -19,6 +19,9 @@ sed -i 's/Defaults\s\+requiretty/Defaults !requiretty/g' /etc/sudoers
 yum update -y
 yum install -y NetworkManager nc
 
+easy_install pip
+pip install -U pip
+
 systemctl enable NetworkManager
 systemctl start NetworkManager
 

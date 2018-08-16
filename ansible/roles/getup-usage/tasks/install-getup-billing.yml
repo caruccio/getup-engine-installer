@@ -46,9 +46,6 @@
   - name: Install virtualenv
     command: easy_install virtualenv
 
-  - name: Install pip
-    command: easy_install pip
-
   - name: Check virtualenv
     stat:
       path: "{{ getupcloud_billing_install_dir }}/.env"

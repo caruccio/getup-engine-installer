@@ -1,43 +1,131 @@
 #!/bin/bash
 
-source /etc/profile.d/etcdctl.sh
+source /etc/profile.d/etcdctl.sh 2>/dev/null || true
+source /etc/etcd/etcd.conf
+
+if [ -z "$ETCD_DATA_DIR" ]; then
+    ETCD_DATA_DIR=/var/lib/etcd/
+fi
 
 set -eu
 
-ROOT_DIR=${0%/*}
-PROVIDER=${1}
-TIMESTAMP=$(date +%Y%m%d-%H%M%S-%Z)
-BACKUP_ROOT=$(mktemp -d /tmp/cluster-backup-XXXXXX)
-BACKUP_DIR=${BACKUP_ROOT}/etcd-backup-${TIMESTAMP}
-BACKUP_FILE=${BACKUP_DIR}/etcd-backup-${TIMESTAMP}.tar.gz
+echo Using ETCD_DATA_DIR=$ETCD_DATA_DIR # force exit on fail
+test -d $ETCD_DATA_DIR
+
+ROOT_DIR="${0%/*}"
+PROVIDER="${1}"
+TIMESTAMP="$(date +%Y%m%d-%H%M%S-%Z)"
+BACKUP_ROOT=$(mktemp -d -p "$ETCD_DATA_DIR" cluster-backup-XXXXXXXX)
+BACKUP_DIR="${BACKUP_ROOT}/etcd-backup-${TIMESTAMP}"
+BACKUP_FILE="${BACKUP_DIR}/etcd-backup-${TIMESTAMP}.tar.gz"
+BACKUP_NAMESPACE="${BACKUP_NAMESPACE:-default}"
+KUBERNETES_SERVICE_HOST="${KUBERNETES_SERVICE_HOST:-127.0.0.1}"
+KUBERNETES_SERVICE_PORT_HTTPS="${KUBERNETES_SERVICE_PORT_HTTPS:-443}"
 
 cleanup()
 {
     echo "--> Cleaning $BACKUP_ROOT"
-    rm -rf $BACKUP_ROOT
+    rm -rf "$BACKUP_ROOT"
 }
 
-warn()
+function exit_error()
 {
-    echo "--> Upload failed"
-    echo "--> Backup files still in $BACKUP_ROOT"
+    cleanup || true
+    gen_event etcd-backup "$1"
+    echo "--> Failed" `date`
+    exit 1
+}
+
+function gen_event()
+{
+    echo "Generating event: $@"
+    local \
+        sourceComponent="$1" \
+        reason="$2" \
+        count=1 \
+        date=$(date --iso-8601=seconds -u | sed -e 's/[+-]....$/Z/') \
+        eventId=$(($(date +'%s * 1000 + %-N / 1000000'))) # milliseconds since epoch
+
+    if [ "$reason" == Success ]; then
+        local type=Normal
+        local message="Etcd backup sucessfully created"
+    else
+        local type=Warning
+        case "$reason" in
+            FailedBackupDump) local message="Error dumping etcd backup" ;;
+            FailedBackupUpload) local message="Error uploading etcd backup" ;;
+            *) local message="Error running etcd backup"
+        esac
+    fi
+
+    curl "https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT_HTTPS/api/v1/namespaces/$BACKUP_NAMESPACE/events/" \
+        -k \
+        --cert /etc/origin/master/admin.crt \
+        --key /etc/origin/master/admin.key \
+        -H "Content-Type: application/json" \
+        -d @- <<EOF
+{
+    "apiVersion": "v1",
+    "kind": "Event",
+    "metadata": {
+      "name": "$sourceComponent.$eventId",
+      "namespace": "$BACKUP_NAMESPACE"
+    },
+    "type": "$type",
+    "count": $count,
+    "message": "$message",
+    "firstTimestamp": "$date",
+    "lastTimestamp": "$date",
+    "reason": "$reason",
+    "reportingComponent": "backup.getup.io/etcd",
+    "reportingInstance": "$HOSTNAME",
+    "source": {
+      "component": "$sourceComponent",
+      "host": "$HOSTNAME"
+    }
+}
+EOF
+}
+
+function etcd_dump()
+{
+    local etcdctl_dump_command="export ETCDCTL_API=3; source /etc/etcd/etcd.conf;
+            /usr/local/bin/etcdctl --cert=\$ETCD_PEER_CERT_FILE --key=\$ETCD_PEER_KEY_FILE \
+                --cacert=\$ETCD_TRUSTED_CA_FILE --endpoints=\$ETCD_LISTEN_CLIENT_URLS \
+                snapshot save $BACKUP_DIR/db"
+
+    CRI_ID=$(crictl ps -o json | jq '.containers[] | select( .metadata.name | contains("etcd")) | .id' -cr || true)
+    if [ -n "$CRI_ID" ]; then
+        crictl exec -it "$CRI_ID" /bin/sh -c "$etcdctl_dump_command"
+        return
+    fi
+
+    DOCKER_ID=$(docker ps  --format '{{.ID}}' --filter 'name=etcd')
+    if [ -n "$DOCKER_ID" ]; then
+        docker exec "$DOCKER_ID" /bin/sh -c "$etcdctl_dump_command"
+        return
+    fi
+
+
+    etcdctl3 snapshot save "$BACKUP_DIR/db"
 }
 
 trap cleanup EXIT
+trap 'exit_error FailedBackup' ERR
 
 echo "--> Started" `date`
 echo "--> Generating etcd backup to ${BACKUP_FILE}"
 
-mkdir -p $BACKUP_DIR
+mkdir -p "$BACKUP_DIR"
 
-etcdctl3 snapshot save $BACKUP_DIR/db
-rsync --recursive /etc/etcd $BACKUP_DIR
-rsync --recursive /etc/origin/master $BACKUP_DIR
-rsync --recursive /etc/origin/node $BACKUP_DIR
+etcd_dump && \
+rsync --recursive /etc/etcd "$BACKUP_DIR" && \
+rsync --recursive /etc/origin/master "$BACKUP_DIR" || exit_error FailedBackupDump
 
-cd $BACKUP_DIR
-tar czvf $BACKUP_FILE db */ --atime-preserve --preserve-permissions
+cd "$BACKUP_DIR"
+tar czvf "$BACKUP_FILE" db */ --atime-preserve --preserve-permissions
 
-bash -c "${ROOT_DIR}/upload-${PROVIDER} ${BACKUP_FILE}" || trap warn EXIT
+bash -c "${ROOT_DIR}/upload-${PROVIDER} ${BACKUP_FILE}" || exit_error FailedBackupUpload
 
+gen_event etcd-backup Success
 echo "--> Finished" `date`

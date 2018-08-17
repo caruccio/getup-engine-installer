@@ -129,3 +129,14 @@
   systemd:
     state: restarted
     name: systemd-journald
+
+- shell: "pip --version"
+  ignore_errors: yes
+  register: pip
+
+- name: Install pip
+  shell: "easy_install pip"
+  when: pip.rc != 0
+
+- name: Update pip
+  shell: "pip install -U pip"

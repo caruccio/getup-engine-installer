@@ -63,7 +63,7 @@ ADD bin/ /getup-engine/bin/
 
 ARG RELEASE
 
-RUN chmod -R go+rw /getup-engine && \
+RUN chmod ug+rw /getup-engine && \
     chmod -R +x /getup-engine/bin/ && \
     echo $RELEASE > /getup-engine/release
 

@@ -9,6 +9,7 @@ ENV PACKER_VERSION=1.2.3 \
     PATH=/getup-engine/bin/:$PATH \
     PACKER_BIN=/getup-engine/bin/packer \
     TERRAFORM_BIN=/getup-engine/bin/terraform \
+    TF_DATA_DIR=/state/.terraform \
     ANSIBLE_BIN=/usr/bin/ansible \
     ANSIBLE_PLAYBOOK_BIN=/usr/bin/ansible-playbook
 

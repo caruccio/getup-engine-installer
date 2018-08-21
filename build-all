@@ -17,7 +17,20 @@ for release in $releases; do
         ./build $release 2>&1 | sed -e "s/\(.*\)/${color}\1${rcolor}/"
     ) &
 done
+
+kill_bg_jobs()
+{
+    local pids=$(jobs -lr | awk '{print $2}')
+    if [ -z "$pids" ]; then
+        return
+    fi
+    echo "Killing background jobs ($pids)"
+    kill -INT $pids
+}
+
+trap kill_bg_jobs SIGINT
 wait
+trap - SIGINT
 
 tput sgr0 && tput setaf 10 && tput bold
 echo

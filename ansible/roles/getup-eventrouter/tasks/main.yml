@@ -39,7 +39,6 @@
     namespace: "{{ openshift_prometheus_namespace }}"
     from_file: 
       config.json: config.json
-    delete_after: yes
       
 - name: EventRouter | Add template
   template:

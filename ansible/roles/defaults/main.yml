@@ -57,6 +57,7 @@ getupcloud_api_trusted_domains: ""
 getupcloud_backup_storage_kind: ""
 getupcloud_backup_retention_days: 7
 getupcloud_backup_install_dir: "/usr/share/getup-backup"
+getupcloud_database_backup_label_selector: 'backup.getup.io/database=true'
 
 getupcloud_backup_storage_s3_accesskey: ""
 getupcloud_backup_storage_s3_secretkey: ""

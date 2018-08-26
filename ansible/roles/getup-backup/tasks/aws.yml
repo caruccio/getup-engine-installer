@@ -33,7 +33,7 @@
     --env 'AWS_SECRET_ACCESS_KEY={{ getupcloud_backup_storage_s3_secretkey | default("") }}'
     --env 'AWS_DEFAULT_REGION={{ getupcloud_backup_storage_s3_region | default("") }}'
     --env 'DEFAULT_RETENTION_DAYS={{ getupcloud_backup_retention_days | default(7) | int }}'
-    --image getupcloud/aws-volume-snapshot:latest
+    --image getupcloud/volume-backup:latest
     --schedule '20 4 * * *'
     --restart Never
     --labels 'job=volume-backup,provider=aws,storage_type={{ getupcloud_backup_storage_kind }}'

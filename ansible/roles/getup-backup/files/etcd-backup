@@ -68,8 +68,8 @@ function gen_event()
     "apiVersion": "v1",
     "kind": "Event",
     "metadata": {
-        "name": "$sourceComponent.$eventId",
-        "namespace": "$BACKUP_NAMESPACE"
+      "name": "$sourceComponent.$eventId",
+      "namespace": "$BACKUP_NAMESPACE"
     },
     "type": "$type",
     "count": $count,
@@ -77,16 +77,16 @@ function gen_event()
     "firstTimestamp": "$date",
     "lastTimestamp": "$date",
     "reason": "$reason",
+    "involvedObject": {
+      "kind": "EtcdBackup",
+      "namespace": "$BACKUP_NAMESPACE",
+      "name": "etcd-backup"
+    },
     "reportingComponent": "backup.getup.io/etcd",
     "reportingInstance": "$HOSTNAME",
     "source": {
-        "component": "$sourceComponent",
-        "host": "$HOSTNAME"
-    },
-    "involvedObject": {
-        "kind": "EtcdBackup"
-        "name": "$sourceComponent",
-        "namespace": "$BACKUP_NAMESPACE"
+      "component": "$sourceComponent",
+      "host": "$HOSTNAME"
     }
 }
 EOF

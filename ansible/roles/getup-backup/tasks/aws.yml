@@ -13,8 +13,6 @@
     --env 'AWS_REGION={{ getupcloud_backup_storage_s3_region | default("") }}'
     --env 'AWS_S3_BUCKET_NAME={{ getupcloud_backup_storage_s3_bucket | default("") }}'
     --env 'NAMESPACE={{ getupcloud_namespace }}'
-    --env 'LABEL_SELECTOR={{ getupcloud_database_backup_label_selector }}'
-    --env 'ANNOTATION_SELECTOR={{ getupcloud_database_backup_label_selector }}'
     --image 'getupcloud/database-backup:latest'
     --schedule '20 5 * * *'
     --restart Never

@@ -77,6 +77,11 @@ function gen_event()
     "firstTimestamp": "$date",
     "lastTimestamp": "$date",
     "reason": "$reason",
+    "involvedObject": {
+      "kind": "EtcdBackup",
+      "namespace": "$BACKUP_NAMESPACE",
+      "name": "etcd-backup"
+    },
     "reportingComponent": "backup.getup.io/etcd",
     "reportingInstance": "$HOSTNAME",
     "source": {

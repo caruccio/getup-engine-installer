@@ -9,6 +9,7 @@ ENV PACKER_VERSION=1.2.3 \
     PATH=/getup-engine/bin/:$PATH \
     PACKER_BIN=/getup-engine/bin/packer \
     TERRAFORM_BIN=/getup-engine/bin/terraform \
+    TF_DATA_DIR=/state/.terraform \
     ANSIBLE_BIN=/usr/bin/ansible \
     ANSIBLE_PLAYBOOK_BIN=/usr/bin/ansible-playbook
 
@@ -63,7 +64,7 @@ ADD bin/ /getup-engine/bin/
 
 ARG RELEASE
 
-RUN chmod -R go+rw /getup-engine && \
+RUN chmod ug+rw /getup-engine && \
     chmod -R +x /getup-engine/bin/ && \
     echo $RELEASE > /getup-engine/release
 

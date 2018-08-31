@@ -549,3 +549,14 @@ groups:
     annotations:
       description: Looks like backup jobs aren't running at all.
       summary: Backup not active
+
+  - alert: FailedGetupJobs
+    expr: sum(irate(heptio_eventrouter_warnings_total{involved_object_namespace="getup", involved_object_kind="Job", reason="BackoffLimitExceeded"}[1h])) > 0
+    for: 1h
+    labels:
+      cluster: getup
+      service: jobs
+      severity: warning
+    annotations:
+      description: Some getup jobs are failing to execute
+      summary: Failed jobs

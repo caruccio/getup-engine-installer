@@ -1,0 +1,43 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: zabbix-agent
+  labels:
+    tier: monitoring
+    app: zabbix-agent
+    version: v1
+spec:
+  template:
+    metadata:
+      labels:
+        name: zabbix-agent
+    spec:
+      hostPID: true
+      hostIPC: true
+      hostNetwork: false
+      serviceAccountName: zabbix-agent
+      containers:
+        - resources:
+            requests:
+              cpu: 100m
+          securityContext:
+            privileged: true
+          env:
+          - name: ZBX_SERVER_HOST
+            value: {{ zabbix_url }}
+          - name: ZBX_PASSIVE_ALLOW
+            value: "true"
+          image: zabbix/zabbix-agent
+          name: zabbix-agent
+          volumeMounts:
+            - name: rootfs
+              mountPath: /rootfs
+            - name: run
+              mountPath: /var/run/
+      volumes:
+        - name: rootfs
+          hostPath:
+            path: /
+        - name: run
+          hostPath:
+            path: /var/run/

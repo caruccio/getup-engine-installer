@@ -1,0 +1,35 @@
+---
+# tasks file for docker-zabbix-agent
+- name: Docker Zabbix | Create Service Account
+  oc_serviceaccount:
+    name: zabbix-agent
+    namespace: "{{ openshift_prometheus_namespace }}"
+    state: present
+  
+- name: Add template zabbix-agent
+  template:
+    src: zabbix-docker.yaml.j2
+    dest: "zabbix-docker.yaml"
+
+- name: Docker Zabbix | Create DaemonSet  
+  oc_obj:
+    state: present
+    namespace: "{{ openshift_prometheus_namespace }}"
+    kind: DaemonSet
+    name: zabbix-agent
+    files:
+      - "zabbix-agent.yaml"
+    delete_after: yes
+  
+- name: Permission | Set Permissions SCC for SA zabbix-agent
+  oc_adm_policy_user:
+    state: present
+    user: "system:serviceaccount:{{ openshift_prometheus_namespace }}:zabbix-agent"
+    namespace: "{{ openshift_prometheus_namespace }}"
+    resource_kind: scc
+    resource_name: privileged
+  
+  
+
+
+

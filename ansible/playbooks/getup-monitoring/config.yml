@@ -45,3 +45,14 @@
     - include_role:
         name: getup-zabbix
       when: getupcloud_install_alertmanager_zabbix_webhook | default(false) | bool
+
+- name: Zabbix-Agent
+  hosts: oo_first_master
+  gather_facts: no
+  tags:
+    - getup-zabbix
+  tasks:
+    - include_role:
+        name: getup-zabbix-agent
+      when: getupcloud_zabbix_agent | default(false) | bool
+

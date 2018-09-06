@@ -213,7 +213,7 @@ scrape_configs:
     action: replace
     target_label: __address__
     regex: (.+)(?::\d+)
-    replacement: $1:2379
+    replacement: localhost:2379
 
 - job_name: "router-nodes"
   basic_auth:

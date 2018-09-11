@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 case $TARGET_OPENSHIFT_RELEASE in
     v3.9|v3.10) ;;
@@ -62,13 +62,18 @@ set -e
 for file in ${ROOT_DIR}/roles/defaults/*; do
     EXPORT=1 config2env $file
 done > /tmp/ansible-defaults.env
+
 echo Sourcing ansible defaults /tmp/ansible-defaults.env
+set -a
 source /tmp/ansible-defaults.env
+set +a
 
 # Load inputs
 for file in getupengine.env terraform-out.env; do
     echo Sourcing $STATE_DIR/$file
+    set -a
     source $STATE_DIR/$file
+    set +a
 done
 
 # Setup openshift-ansible

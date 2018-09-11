@@ -115,8 +115,8 @@ groups:
 - name: docker.rules
   rules:
   - alert: DockerHasErrors
-    expr: irate(kubelet_docker_operations_errors{operation_type!~"remove_container|start_container|inspect_container|inspect_image|inspect_exec|operation_type|logs"}[10m]) > 1
-    for: 5m
+    expr: irate(kubelet_docker_operations_errors{operation_type!~"remove_container|start_container|inspect_container|inspect_image|inspect_exec|operation_type|logs"}[30m]) > 1
+    for: 30m
     labels:
       cluster: {{ cluster_name }}
       service: docker
@@ -127,8 +127,8 @@ groups:
       summary: Docker has errors
 {% endraw %}
   - alert: DockerHasTimeout
-    expr: irate(kubelet_docker_operations_timeout[5m]) > 0
-    for: 1m
+    expr: irate(kubelet_docker_operations_timeout[1h]) > 1
+    for: 1h
     labels:
       cluster: {{ cluster_name }}
       service: docker

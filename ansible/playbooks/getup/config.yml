@@ -9,6 +9,14 @@
   roles:
     - init
 
+- name: Mount Disk
+  hosts: oo_first_master
+  tags:
+    - getup
+  tasks:
+    - include_role:
+        name: getup-docker
+
 - name: Copy tools
   hosts: oo_first_master
   tags:

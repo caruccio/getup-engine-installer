@@ -643,33 +643,33 @@ groups:
     expr: heptio_eventrouter_warnings_current{involved_object_kind=~".*Backup"} > 1
     for: 1m
     labels:
-      cluster: getup
+      cluster: {{ cluster_name }}
       service: backup
       severity: warning
     annotations:
 {% raw %}
-      description: 'Some backup job(s) of kind {{$label.involved_object_kind}} has failed'
-      summary: Backup has failed
+      description: {{ cluster_name }} - 'Some backup job(s) of kind {{$label.involved_object_kind}} has failed'
+      summary: Backup has failed - {{ cluster_name }}
 {% endraw %}
 
   - alert: BackupNotActive
     expr: absent(heptio_eventrouter_normal_current{involved_object_kind=~".*Backup"}) > 0
     for: 24h
     labels:
-      cluster: getup
+      cluster: {{ cluster_name }}
       service: backup
       severity: warning
     annotations:
-      description: Looks like backup jobs aren't running at all.
-      summary: Backup not active
+      description: {{ cluster_name }} - Looks like backup jobs aren't running at all.
+      summary: Backup not active - {{ cluster_name }}
 
   - alert: FailedGetupJobs
     expr: sum(irate(heptio_eventrouter_warnings_total{involved_object_namespace="getup", involved_object_kind="Job", reason="BackoffLimitExceeded"}[1h])) > 0
     for: 1h
     labels:
-      cluster: getup
+      cluster: {{ cluster_name }}
       service: jobs
       severity: warning
     annotations:
-      description: Some getup jobs are failing to execute
-      summary: Failed jobs
+      description: {{ cluster_name }} - Some getup jobs are failing to execute
+      summary: {{ cluster_name }} - Failed jobs

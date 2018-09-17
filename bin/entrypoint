@@ -9,7 +9,14 @@ export CERTS_DIR="${CERTS_DIR:-$STATE_DIR/certs}"
 export AZURE_CONFIG_DIR=$STATE_DIR/azure
 export ANSIBLE_LOG_PATH=$STATE_DIR/ansible.log
 
+set -a
 source ${STATE_DIR}/getupengine.env
+set +a
+
+if [ -z "${CLUSTER_ID}" ]; then
+    echo "Please rename \$NAME to \$CLUSTER_ID and try again"
+    exit 1
+fi
 
 if [ ! -d "/getup-engine/terraform/${PROVIDER}/" ]; then
     echo Missing provider $PROVIDER

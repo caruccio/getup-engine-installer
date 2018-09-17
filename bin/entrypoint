@@ -9,7 +9,14 @@ export CERTS_DIR="${CERTS_DIR:-$STATE_DIR/certs}"
 export AZURE_CONFIG_DIR=$STATE_DIR/azure
 export ANSIBLE_LOG_PATH=$STATE_DIR/ansible.log
 
+set -a
 source ${STATE_DIR}/getupengine.env
+set +a
+
+if [ -z "${CLUSTER_ID}" ]; then
+    echo "Please rename \$NAME to \$CLUSTER_ID and try again"
+    exit 1
+fi
 
 if [ ! -d "/getup-engine/terraform/${PROVIDER}/" ]; then
     echo Missing provider $PROVIDER
@@ -17,7 +24,9 @@ if [ ! -d "/getup-engine/terraform/${PROVIDER}/" ]; then
 fi
 
 if [ "$PROVIDER" == aws ]; then
-    export STATE_BACKEND=s3://${NAME}-cluster-state-$(md5sum <<<$NAME | awk '{print $1}')
+    export STATE_BACKEND="s3://${CLUSTER_ID}-cluster-state-$(md5sum <<<$CLUSTER_ID| awk '{print $1}')"
+else
+    export STATE_BACKEND="file://${STATE_DIR}/terraform.tfstate"
 fi
 
 source setup-state-backend
@@ -39,8 +48,10 @@ COLOR_RED=$(tput sgr0 && tput setaf 1 && tput bold)
 COLOR_GREEN=$(tput sgr0 && tput setaf 2 && tput bold)
 COLOR_RESET=$(tput sgr0)
 
-export PS1="[\[$COLOR_GREEN\]${NAME} \[$COLOR_RESET\]@ \[$COLOR_RED\]$TARGET_OPENSHIFT_VERSION\[$COLOR_RESET\]] \D{%x %X} \w \$ "
+export PS1="[\[$COLOR_GREEN\]${CLUSTER_ID} \[$COLOR_RESET\]@ \[$COLOR_RED\]$TARGET_OPENSHIFT_VERSION\[$COLOR_RESET\]] \D{%x %X} \w \$ "
 
 grep -q 'source /getup-engine/bin/on.sh' ~/.bashrc 2>/dev/null || echo 'source /getup-engine/bin/on.sh' >> ~/.bashrc
+
+mkdir -p ${CERTS_DIR:-$STATE_DIR/certs}
 
 exec "$@"

@@ -296,11 +296,6 @@ resource "aws_instance" "masters" {
     }
 }
 
-module "dns" "xxx" {
-  source = "./dns"
-
-}
-
 resource "aws_route53_record" "masters-SRV" {
     zone_id = "${data.aws_route53_zone.cluster.id}"
     name    = "masters.${var.cluster_zone}"

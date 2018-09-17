@@ -5,6 +5,12 @@ ansible/certs
 *.sw?
 environment*
 plan.*
+**/*.tfstate
 state
 scripts/origin
 .suffix
+.terraform
+images/*/*-manifest.json
+**/crash.log
+NetrwTreeListing*
+terraform/gce/outputs.tf

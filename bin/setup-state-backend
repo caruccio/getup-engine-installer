@@ -41,5 +41,7 @@ if [ "$PROVIDER" == aws ]; then
     __do_setup_state_backend
     unset __do_setup_state_backend
 elif [ "$PROVIDER" == azure ]; then
-    state="${STATE_DIR}/terraform.tfstate"
+    state="${STATE_BACKEND#file://}"
+elif [ "$PROVIDER" == gce ]; then
+    state="${STATE_BACKEND#file://}"
 fi

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$PROVIDER" == aws ]; then
+if [ "${STATE_BACKEND%%://*}" == s3 ]; then
     function __do_setup_state_backend()
     {
         local BUCKET_NAME=${STATE_BACKEND#s3://}
@@ -40,8 +40,6 @@ if [ "$PROVIDER" == aws ]; then
     }
     __do_setup_state_backend
     unset __do_setup_state_backend
-elif [ "$PROVIDER" == azure ]; then
-    state="${STATE_BACKEND#file://}"
-elif [ "$PROVIDER" == gce ]; then
-    state="${STATE_BACKEND#file://}"
+elif [ "${STATE_BACKEND%%://*}" == file -o -f "${STATE_BACKEND}" ]; then
+    export TERRAFORM_STATE_FILE="${STATE_BACKEND#file://}"
 fi

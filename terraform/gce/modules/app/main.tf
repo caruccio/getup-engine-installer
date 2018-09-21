@@ -106,6 +106,10 @@ resource "google_compute_instance" "app" {
             "service-control"
         ]
     }
+
+    lifecycle {
+        ignore_changes = [ "attached_disk" ]
+    }
 }
 
 resource "google_dns_record_set" "apps" {

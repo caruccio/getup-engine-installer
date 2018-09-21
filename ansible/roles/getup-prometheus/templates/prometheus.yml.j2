@@ -263,21 +263,21 @@ scrape_configs:
     target_label: role
     replacement: infra
 
-- job_name: "app-nodes"
-  dns_sd_configs:
-    - names:
-      - apps.{{ cluster_zone }}
-      type: SRV
-  relabel_configs:
-  - source_labels: [__address__]
-    action: replace
-    target_label: server_name
-    regex: ([^\.]+).*
-  - source_labels: [__address__]
-    action: replace
-    regex: .*
-    target_label: role
-    replacement: app
+#- job_name: "app-nodes"
+#  dns_sd_configs:
+#    - names:
+#      - apps.{{ cluster_zone }}
+#      type: SRV
+#  relabel_configs:
+#  - source_labels: [__address__]
+#    action: replace
+#    target_label: server_name
+#    regex: ([^\.]+).*
+#  - source_labels: [__address__]
+#    action: replace
+#    regex: .*
+#    target_label: role
+#    replacement: app
 
 alerting:
   alertmanagers:

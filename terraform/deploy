@@ -4,6 +4,7 @@ export NEWRELIC_LICENSE_KEY=${NEWRELIC_LICENSE_KEY}
 export REGISTRY_PREFIX=${REGISTRY_PREFIX:+$REGISTRY_PREFIX-}
 export TERRAFORM_BIN=${TERRAFORM_BIN:-terraform}
 export STATE_DIR=${TERRAFORM_STATE_DIR:-/state}
+export TERRAFORM_STATE_FILE=""
 export ROOT_DIR="$(dirname $0)"
 
 for envFile in $STATE_DIR/images/images.env $STATE_DIR/getupengine.env; do
@@ -20,6 +21,7 @@ if [ "${PROVIDER}" == azure ]; then
     if ! az account show 2>/dev/null | grep -q .; then
         az account get-access-token &>/dev/null || az login || exit 1
     fi
+
 elif [ "${PROVIDER}" == aws ]; then
     echo Retrieving AWS IAM UserId
     export AWS_USER_ID=$(aws iam get-user --query User.UserId --output text)
@@ -55,7 +57,6 @@ assume_no=0
 no_plan=0
 dry_run=0
 opts=""
-state=""
 plan=${STATE_DIR}/terraform.plan
 target=""
 init=0
@@ -120,12 +121,12 @@ elif [ $destroy == 1 ]; then
     if [ ${PROVIDER} == 'aws' -a $assume_yes == 1 ]; then
         aws s3 rm --recursive s3://${GETUPCLOUD_BACKUP_STORAGE_S3_BUCKET}/ || true
     fi
-    exec ${TERRAFORM_BIN} destroy -var-file=${STATE_DIR}/terraform.tfvars ${opts} ${target} ${state:+-state=$state}
+    exec ${TERRAFORM_BIN} destroy -var-file=${STATE_DIR}/terraform.tfvars ${opts} ${target} ${TERRAFORM_STATE_FILE:+-state=$TERRAFORM_STATE_FILE}
 fi
 
 if [ $no_plan == 0 ]; then
     echo "Planning... [$plan]"
-    ${TERRAFORM_BIN} plan -var-file=${STATE_DIR}/terraform.tfvars ${opts} ${target} ${state:+-state=$state} -out=${plan}
+    ${TERRAFORM_BIN} plan -var-file=${STATE_DIR}/terraform.tfvars ${opts} ${target} ${TERRAFORM_STATE_FILE:+-state=$TERRAFORM_STATE_FILE} -out=${plan}
 fi
 
 if [ $assume_no == 1 ]; then
@@ -146,11 +147,11 @@ fi
 trap save-state EXIT
 
 echo Applying...
-${TERRAFORM_BIN} apply ${opts} ${target} ${state:+-state-out=$state} ${plan}
+${TERRAFORM_BIN} apply ${opts} ${target} ${TERRAFORM_STATE_FILE:+-state-out=$TERRAFORM_STATE_FILE} ${plan}
 ret=$?
 
 echo Converting output to $STATE_DIR/terraform-out.env
-${TERRAFORM_BIN} output -json ${state:+-state=$state} | EXPORT=1 config2env > $STATE_DIR/terraform-out.env
+${TERRAFORM_BIN} output -json ${TERRAFORM_STATE_FILE:+-state=$TERRAFORM_STATE_FILE} | EXPORT=1 config2env > $STATE_DIR/terraform-out.env
 
 if [ $ret -eq 0 -a $scale_infra -gt 0 ]; then
     echo Updating state: INFRA_COUNT=$INFRA_COUNT

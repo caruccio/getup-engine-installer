@@ -118,6 +118,10 @@ resource "google_compute_instance" "master" {
             "service-control"
         ]
     }
+
+    lifecycle {
+        ignore_changes = [ "attached_disk" ]
+    }
 }
 
 resource "google_compute_instance_group" "master" {

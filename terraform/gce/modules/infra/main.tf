@@ -106,6 +106,10 @@ resource "google_compute_instance" "infra" {
             "service-control"
         ]
     }
+
+    lifecycle {
+        ignore_changes = [ "attached_disk" ]
+    }
 }
 
 ## DNS records

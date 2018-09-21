@@ -638,7 +638,19 @@ groups:
       description: 'Disk {{$label.device}} on {{$label.instance}} will be full in 7 days'
       summary: High disk usage
 {% endraw %}
-
+  - record: pvc:usage_percent
+    expr: kubelet_volume_stats_used_bytes{namespace=~"default|getup|kube-(public|system)|logging|management-infra|openshift|openshift-(grafana|infra|metrics|node|web-console)"}/kubelet_volume_stats_capacity_bytes{namespace=~"default|getup|kube-(public|system)|logging|management-infra|openshift|openshift-(grafana|infra|metrics|node|web-console)"} * 100
+  - alert: PVCDiskUsage
+    expr: predict_linear(pvc:usage_percent[1h], 60 * 60 * 24 * 8) > 100
+    for: 24h
+    labels:
+      severity: critical
+      cluster: {{ cluster_name }}
+    annotations:
+{% raw %}
+    description: PVC {{$labels.persistentvolumeclaim}} in {{$labels.namespace}} will be full in 7 days - {{ cluster_name }}
+    summary: PVCDiskUsage
+{% endraw %}
   - alert: FailedBackup
     expr: heptio_eventrouter_warnings_current{involved_object_kind=~".*Backup"} > 1
     for: 1m
@@ -672,4 +684,4 @@ groups:
       severity: warning
     annotations:
       description: {{ cluster_name }} - Some getup jobs are failing to execute
-      summary: {{ cluster_name }} - Failed jobs
+      summary: {{ cluster_name }} - Failed jobs.
